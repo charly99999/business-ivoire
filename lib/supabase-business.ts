@@ -1,4 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
+
+import { supabase, supabaseAnonKey, supabaseUrl } from "@/lib/supabase";
 
 type IdentityStatus = "pending" | "selfie_captured" | "approved" | "rejected";
 
@@ -11,6 +14,7 @@ export type SupabaseBusinessProfile = {
   phone?: string;
   contactEmail?: string;
   coverUrl?: string;
+  avatarUrl?: string;
   locked: boolean;
   identityStatus: IdentityStatus;
 };
@@ -19,16 +23,86 @@ function publicCoverUrl(path?: string | null) {
   return path ? supabase.storage.from("profile-covers").getPublicUrl(path).data.publicUrl : undefined;
 }
 
+function publicAvatarUrl(path?: string | null) {
+  return path ? supabase.storage.from("profile-avatars").getPublicUrl(path).data.publicUrl : undefined;
+}
+
 async function currentUserId() {
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) throw new Error("Connexion requise.");
   return data.user.id;
 }
 
+export function isIdentityVerified(status?: IdentityStatus | null) {
+  return status === "selfie_captured" || status === "approved";
+}
+
+async function requireCapturedSelfie() {
+  const userId = await currentUserId();
+  const { data, error } = await supabase
+    .from("identity_verifications")
+    .select("status")
+    .eq("profile_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!isIdentityVerified(data?.status as IdentityStatus | undefined)) {
+    throw new Error("Prenez d’abord votre selfie en direct pour accéder à cette fonctionnalité.");
+  }
+  return userId;
+}
+
 async function dataUriToBlob(dataUri: string) {
   const response = await fetch(dataUri);
   if (!response.ok) throw new Error("Lecture de l’image impossible.");
   return response.blob();
+}
+
+function contentTypeForExtension(extension: string) {
+  return `image/${extension === "jpg" ? "jpeg" : extension}`;
+}
+
+async function uploadCapturedSelfie(path: string, dataUri: string, extension: string) {
+  const contentType = contentTypeForExtension(extension);
+  console.info("[identity] selfie upload started", { platform: Platform.OS, path });
+
+  if (Platform.OS === "web") {
+    const { error } = await supabase.storage
+      .from("identity-selfies")
+      .upload(path, await dataUriToBlob(dataUri), { contentType });
+    if (error) throw error;
+    console.info("[identity] selfie private upload completed", { path });
+    return;
+  }
+
+  const encoded = dataUri.split(",")[1];
+  if (!encoded) throw new Error("Le fichier selfie ne contient aucune image exploitable.");
+  const temporaryUri = `${FileSystem.cacheDirectory}business-ivoire-selfie-${Date.now()}.${extension}`;
+  try {
+    await FileSystem.writeAsStringAsync(temporaryUri, encoded, { encoding: FileSystem.EncodingType.Base64 });
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (sessionError || !accessToken) throw new Error("Votre session Supabase a expiré. Reconnectez-vous puis réessayez.");
+    const upload = await FileSystem.uploadAsync(
+      `${supabaseUrl}/storage/v1/object/identity-selfies/${path}`,
+      temporaryUri,
+      {
+        httpMethod: "POST",
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseAnonKey ?? "",
+          "Content-Type": contentType,
+          "x-upsert": "false",
+        },
+      },
+    );
+    if (upload.status < 200 || upload.status >= 300) {
+      throw new Error(`Téléversement du selfie refusé par Supabase (HTTP ${upload.status}).`);
+    }
+    console.info("[identity] selfie private upload completed", { path, status: upload.status });
+  } finally {
+    await FileSystem.deleteAsync(temporaryUri, { idempotent: true }).catch(() => undefined);
+  }
 }
 
 function extensionForDataUri(dataUri: string) {
@@ -40,7 +114,7 @@ function extensionForDataUri(dataUri: string) {
 export async function getMyBusinessProfile(): Promise<SupabaseBusinessProfile | null> {
   const userId = await currentUserId();
   const [{ data: profile, error: profileError }, { data: identity, error: identityError }] = await Promise.all([
-    supabase.from("profiles").select("id,display_name,bio,category,location,phone,contact_email,cover_path,profile_locked").eq("id", userId).maybeSingle(),
+    supabase.from("profiles").select("id,display_name,bio,category,location,phone,contact_email,cover_path,avatar_path,profile_locked").eq("id", userId).maybeSingle(),
     supabase.from("identity_verifications").select("status").eq("profile_id", userId).maybeSingle(),
   ]);
   if (profileError) throw profileError;
@@ -55,6 +129,7 @@ export async function getMyBusinessProfile(): Promise<SupabaseBusinessProfile | 
     phone: profile.phone ?? undefined,
     contactEmail: profile.contact_email ?? undefined,
     coverUrl: publicCoverUrl(profile.cover_path),
+    avatarUrl: publicAvatarUrl(profile.avatar_path),
     locked: profile.profile_locked,
     identityStatus: (identity?.status ?? "pending") as IdentityStatus,
   };
@@ -89,17 +164,18 @@ export async function captureMySelfie(dataUri: string) {
   const userId = await currentUserId();
   const extension = extensionForDataUri(dataUri);
   const path = `${userId}/selfie-${Date.now()}.${extension}`;
-  const { error: uploadError } = await supabase.storage.from("identity-selfies").upload(path, await dataUriToBlob(dataUri), { contentType: `image/${extension === "jpg" ? "jpeg" : extension}` });
-  if (uploadError) throw uploadError;
+  await uploadCapturedSelfie(path, dataUri, extension);
+  console.info("[identity] capture-selfie function invoked", { path });
   const { data, error } = await supabase.functions.invoke("capture-selfie", { body: { selfiePath: path } });
   if (error) throw error;
   if (data?.identityStatus !== "selfie_captured") throw new Error("Vérification selfie non confirmée.");
+  console.info("[identity] capture-selfie function completed", { path });
   return data.identityStatus as IdentityStatus;
 }
 
 export async function createSupabaseListing(input: { title: string; description: string; price: number; category: string; location: string; condition: "new" | "used" | "service"; images: string[] }) {
   if (input.images.length < 1 || input.images.length > 8) throw new Error("Ajoutez entre 1 et 8 photos.");
-  const userId = await currentUserId();
+  const userId = await requireCapturedSelfie();
   const { data: listing, error: listingError } = await supabase.from("listings").insert({
     seller_id: userId,
     title: input.title,
@@ -139,6 +215,7 @@ export async function toggleSupabaseFavorite(listingId: string) {
 }
 
 export async function createDirectSupabaseConversation(recipientId: string, listingId?: string) {
+  await requireCapturedSelfie();
   const { data, error } = await supabase.functions.invoke("create-direct-conversation", { body: { recipientId, listingId } });
   if (error) throw error;
   if (!data?.id || typeof data.id !== "string") throw new Error("Conversation non créée.");
@@ -146,7 +223,7 @@ export async function createDirectSupabaseConversation(recipientId: string, list
 }
 
 export async function sendSupabaseMessage(conversationId: string, body: string) {
-  const userId = await currentUserId();
+  const userId = await requireCapturedSelfie();
   const message = body.trim();
   if (!message) throw new Error("Message vide.");
   const { error } = await supabase.from("messages").insert({ conversation_id: conversationId, sender_id: userId, body: message });

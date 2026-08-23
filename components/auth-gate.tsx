@@ -24,7 +24,7 @@ export function AuthGate({ children, accessOnly = false }: { children: React.Rea
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { data: { display_name: name.trim() } } });
         if (error) throw error;
-        if (!data.session) { setMessage("Compte créé. Consultez votre e-mail puis revenez vous connecter."); return; }
+        if (!data.session) { setMessage("La session n’a pas été créée. Réessayez dans quelques instants."); return; }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;

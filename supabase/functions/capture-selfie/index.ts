@@ -39,6 +39,33 @@ Deno.serve(async (request: Request) => {
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
+  const { data: privateSelfie, error: selfieDownloadError } = await admin.storage
+    .from("identity-selfies")
+    .download(selfiePath);
+  if (selfieDownloadError || !privateSelfie) {
+    return response({ error: "Selfie privé introuvable." }, 400);
+  }
+
+  const extensionMatch = selfiePath.match(/\.([a-z0-9]{2,5})$/i);
+  const extension = extensionMatch?.[1]?.toLowerCase() ?? "jpg";
+  const avatarPath = `${user.id}/avatar-${Date.now()}.${extension}`;
+  const contentType = privateSelfie.type || (extension === "jpg" ? "image/jpeg" : `image/${extension}`);
+  const { error: avatarUploadError } = await admin.storage
+    .from("profile-avatars")
+    .upload(avatarPath, privateSelfie, { contentType, upsert: false });
+  if (avatarUploadError) {
+    return response({ error: "Création de l’avatar public impossible." }, 500);
+  }
+
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ avatar_path: avatarPath })
+    .eq("id", user.id);
+  if (profileError) {
+    await admin.storage.from("profile-avatars").remove([avatarPath]);
+    return response({ error: "Mise à jour du profil impossible." }, 500);
+  }
+
   const { error: verificationError } = await admin.from("identity_verifications").upsert({
     profile_id: user.id,
     selfie_path: selfiePath,
@@ -47,5 +74,5 @@ Deno.serve(async (request: Request) => {
   }, { onConflict: "profile_id" });
 
   if (verificationError) return response({ error: "Enregistrement de la vérification impossible." }, 500);
-  return response({ identityStatus: "selfie_captured" });
+  return response({ identityStatus: "selfie_captured", avatarPath });
 });

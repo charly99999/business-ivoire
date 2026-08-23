@@ -109,3 +109,11 @@
 - [ ] Confirmer l’adresse e-mail Supabase puis tester sur appareil réel le selfie frontal, la publication et la messagerie.
 - [ ] Activer dans Supabase Auth la protection contre les mots de passe compromis avant ouverture large au public.
 - [ ] Migrer ou masquer les écrans sociaux, notifications, dashboard et groupes qui dépendent encore de l’ancien backend.
+- [ ] Désactiver la confirmation e-mail Supabase pour connecter immédiatement les nouveaux inscrits.
+- [ ] Rendre le selfie direct obligatoire et bloquant après inscription et avant les actions protégées.
+- [ ] Ajouter l’avatar public dérivé du selfie dans les profils, le stockage et les vues marketplace.
+- [ ] Vérifier les politiques RLS de selfie, avatar, annonce et messagerie avec les nouveaux statuts.
+- [ ] Corriger le bouton Confirmer du selfie afin qu’il téléverse réellement l’image et appelle la fonction Supabase.
+- [ ] Vérifier une trace Supabase réelle pour le bucket identity-selfies et la fonction capture-selfie après correction.
+- [ ] Publier le code Business Ivoire dans un dépôt GitHub privé connecté, sans secrets ni fichiers locaux sensibles.
+- [ ] Pousser le code source complet assaini vers charly99999/business-ivoire sur la branche main, sur instruction explicite du propriétaire.

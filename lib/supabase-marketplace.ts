@@ -19,7 +19,7 @@ type ListingRow = {
   status: "active" | "sold" | "archived";
   created_at: string;
   listing_images?: ListingImageRow[] | null;
-  profiles?: { display_name: string; location: string } | null;
+  profiles?: { display_name: string; location: string; avatar_path?: string | null } | null;
 };
 
 export type MarketplaceListing = {
@@ -34,12 +34,16 @@ export type MarketplaceListing = {
   condition: "new" | "used" | "service";
   status: "active" | "sold" | "archived";
   createdAt: string;
-  seller: { displayName: string; location: string };
+  seller: { displayName: string; location: string; avatarUrl?: string };
   images: Array<{ id: string; url: string; sortOrder: number }>;
 };
 
 function listingImageUrl(storagePath: string) {
   return supabase.storage.from("listing-media").getPublicUrl(storagePath).data.publicUrl;
+}
+
+function publicAvatarUrl(storagePath?: string | null) {
+  return storagePath ? supabase.storage.from("profile-avatars").getPublicUrl(storagePath).data.publicUrl : undefined;
 }
 
 function mapListing(row: ListingRow): MarketplaceListing {
@@ -58,6 +62,7 @@ function mapListing(row: ListingRow): MarketplaceListing {
     seller: {
       displayName: row.profiles?.display_name ?? "Vendeur Business Ivoire",
       location: row.profiles?.location ?? row.location,
+      avatarUrl: publicAvatarUrl(row.profiles?.avatar_path),
     },
     images: (row.listing_images ?? [])
       .slice()
@@ -66,7 +71,7 @@ function mapListing(row: ListingRow): MarketplaceListing {
   };
 }
 
-const publicListingSelect = "id,seller_id,title,description,price_fcfa,currency,category,location,condition,status,created_at,profiles!listings_seller_id_fkey(display_name,location),listing_images(id,storage_path,sort_order)";
+const publicListingSelect = "id,seller_id,title,description,price_fcfa,currency,category,location,condition,status,created_at,profiles!listings_seller_id_fkey(display_name,location,avatar_path),listing_images(id,storage_path,sort_order)";
 
 export async function fetchPublicListings(limit = 20, offset = 0): Promise<MarketplaceListing[]> {
   const { data, error } = await supabase

@@ -6,6 +6,9 @@ describe("opérations Business Ivoire Supabase", () => {
 
     expect(source).toContain('from("identity_verifications")');
     expect(source).toContain('from("identity-selfies")');
+    expect(source).toContain('FileSystem.uploadAsync');
+    expect(source).toContain('storage/v1/object/identity-selfies');
+    expect(source).toContain('capture-selfie function invoked');
     expect(source).toContain('functions.invoke("capture-selfie"');
     expect(source).toContain('from("listings")');
     expect(source).toContain('from("listing_favorites")');

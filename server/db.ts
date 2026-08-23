@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
 
@@ -88,23 +88,33 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
-export async function createListing(sellerId: number, input: { title: string; description: string; price: number; category: string; location: string; condition: "new" | "used" | "service"; images: Array<{ key: string; url: string }> }) {
+export async function createListing(sellerId: number, input: { title: string; description: string; price: number; category: string; location: string; condition: "new" | "used" | "service"; images: Array<{ key: string; url: string }> }, sellerName?: string | null) {
   const db = requireDb(await getDb());
+  await ensureProfile(sellerId, sellerName);
   const inserted = await db.insert(listings).values({ sellerId, title: input.title, description: input.description, price: input.price, category: input.category, location: input.location, condition: input.condition });
   const listingId = Number(inserted[0].insertId);
   if (input.images.length) await db.insert(listingImages).values(input.images.map((image, sortOrder) => ({ listingId, storageKey: image.key, url: image.url, sortOrder })));
   return { listingId };
 }
 
-export async function listListings(viewerId: number) {
+export async function listPublicListings(input: { cursor?: { createdAt: Date; id: number }; limit: number }) {
   const db = requireDb(await getDb());
-  const rows = await db.select().from(listings).where(eq(listings.status, "active")).limit(30);
-  return Promise.all(rows.map(async (listing) => {
+  const limit = Math.min(Math.max(input.limit, 1), 40);
+  const cursorFilter = input.cursor ? or(
+    lt(listings.createdAt, input.cursor.createdAt),
+    and(eq(listings.createdAt, input.cursor.createdAt), lt(listings.id, input.cursor.id)),
+  ) : undefined;
+  const where = cursorFilter ? and(eq(listings.status, "active"), cursorFilter) : eq(listings.status, "active");
+  const rows = await db.select().from(listings).where(where).orderBy(desc(listings.createdAt), desc(listings.id)).limit(limit + 1);
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const items = await Promise.all(page.map(async (listing) => {
     const images = await db.select().from(listingImages).where(eq(listingImages.listingId, listing.id)).orderBy(listingImages.sortOrder);
     const seller = (await db.select({ ...publicProfileFields }).from(profiles).where(eq(profiles.userId, listing.sellerId)).limit(1))[0] ?? null;
-    const favorite = (await db.select().from(listingFavorites).where(and(eq(listingFavorites.listingId, listing.id), eq(listingFavorites.userId, viewerId))).limit(1))[0];
-    return { ...listing, images, seller, isFavorite: Boolean(favorite) };
+    return { ...listing, images, seller };
   }));
+  const last = items.at(-1);
+  return { items, nextCursor: hasMore && last ? { createdAt: last.createdAt, id: last.id } : null };
 }
 
 export async function getListing(id: number) {

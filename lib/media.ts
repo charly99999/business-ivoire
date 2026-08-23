@@ -1,5 +1,12 @@
 import { File } from "expo-file-system";
 import { Platform } from "react-native";
+import { getApiBaseUrl } from "@/constants/oauth";
+
+export function resolveMediaUrl(uri: string) {
+  if (!uri || /^(https?:|data:|file:|content:|ph:)/i.test(uri)) return uri;
+  const apiBaseUrl = getApiBaseUrl();
+  return uri.startsWith("/") && apiBaseUrl ? `${apiBaseUrl}${uri}` : uri;
+}
 
 function inferMime(uri: string, fallback = "image/jpeg") {
   const extension = uri.split("?")[0].split(".").pop()?.toLowerCase();

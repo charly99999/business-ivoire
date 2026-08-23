@@ -101,13 +101,13 @@ export const appRouter = router({
     }),
   }),
   marketplace: router({
-    list: protectedProcedure.query(({ ctx }) => db.listListings(ctx.user.id)),
-    byId: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input }) => db.getListing(input.id)),
+    publicList: publicProcedure.input(z.object({ cursor: z.object({ createdAt: z.date(), id: z.number().int().positive() }).optional(), limit: z.number().int().min(1).max(40).default(20) })).query(({ input }) => db.listPublicListings(input)),
+    publicById: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(({ input }) => db.getListing(input.id)),
     toggleFavorite: protectedProcedure.input(z.object({ listingId: z.number().int().positive() })).mutation(({ ctx, input }) => db.toggleListingFavorite(ctx.user.id, input.listingId)),
     create: protectedProcedure.input(z.object({ title: z.string().trim().min(3).max(160), description: z.string().trim().min(10).max(5000), price: z.number().int().positive(), category: z.string().trim().min(2).max(80), location: z.string().trim().min(2).max(160), condition: z.enum(["new", "used", "service"]), images: z.array(z.string().min(50)).min(1).max(8) })).mutation(async ({ ctx, input }) => {
       enforceRateLimit(ctx.user.id, "listing", 6, 60 * 60_000);
       const images = await Promise.all(input.images.map((image) => storeImage(ctx.user.id, "listings", image)));
-      return db.createListing(ctx.user.id, { ...input, images: images.map((image) => ({ key: image.key, url: image.url })) });
+      return db.createListing(ctx.user.id, { ...input, images: images.map((image) => ({ key: image.key, url: image.url })) }, ctx.user.name);
     }),
   }),
   people: router({

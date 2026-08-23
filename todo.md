@@ -42,9 +42,14 @@
 - [x] Créer un écran de bienvenue iPhone avec transition professionnelle vers l’interface principale.
 - [x] Afficher un fil public partagé d’annonces et publications provenant de tous les utilisateurs.
 - [ ] Adapter les listes, chargements et erreurs à une audience importante sans bloquer l’interface.
+- [x] Analyser la vidéo de référence et définir la direction visuelle 3D.
+- [x] Créer un logo Business Ivoire 3D professionnel et remplacer le symbole actuel.
+- [x] Créer et intégrer une illustration 3D pour chaque catégorie marketplace.
 - [x] Recentrer l’application sur les annonces, recherche, favoris et messagerie acheteur-vendeur avant les fonctions sociales.
 - [x] Couvrir toutes les catégories d’annonces via une taxonomie et des filtres extensibles.
 - [x] Rendre le prix en FCFA obligatoire dans le formulaire, les API et l’affichage de chaque annonce.
 - [x] Formater chaque prix d’annonce en FCFA entier avec séparateur de milliers.
 - [x] Ajouter la messagerie comme contact principal et l’appel/WhatsApp uniquement après consentement explicite du vendeur.
 - [x] Finaliser et valider le parcours marketplace de bout en bout avant toute nouvelle livraison.
+- [x] Permettre la consultation publique et paginée des annonces tout en protégeant les actions de compte.
+- [x] Valider de bout en bout la création d’une annonce multi-photos et son affichage public.

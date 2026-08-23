@@ -3,7 +3,6 @@ import { Tabs } from "expo-router";
 import { Platform, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BusinessProvider } from "@/lib/business-context";
 import { AuthGate } from "@/components/auth-gate";
 
 const ICONS = {
@@ -19,8 +18,7 @@ export default function TabLayout() {
   const paddingBottom = Platform.OS === "web" ? 10 : Math.max(insets.bottom, 8);
 
   return (
-    <BusinessProvider>
-      <AuthGate>
+    <AuthGate>
       <Tabs
         screenOptions={({ route }) => ({
           headerShown: false,
@@ -37,8 +35,7 @@ export default function TabLayout() {
         <Tabs.Screen name="messages" options={{ title: "Messages" }} />
         <Tabs.Screen name="profile" options={{ title: "Profil" }} />
       </Tabs>
-      </AuthGate>
-    </BusinessProvider>
+    </AuthGate>
   );
 }
 

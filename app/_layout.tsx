@@ -96,6 +96,7 @@ export default function RootLayout() {
               <Stack.Screen name="settings" />
               <Stack.Screen name="group-create" />
               <Stack.Screen name="conversation/[id]" />
+              <Stack.Screen name="access" options={{ presentation: "fullScreenModal" }} />
               <Stack.Screen name="oauth/callback" />
             </Stack>
           </BusinessProvider>

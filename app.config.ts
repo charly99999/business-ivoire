@@ -31,7 +31,7 @@ const env = {
   appName: "Business Ivoire",
   appSlug: "business-ivoire-mobile",
   // URL of the custom app logo used by the platform.
-  logoUrl: "/manus-storage/business-ivoire-icon_1dda5424.png",
+  logoUrl: "/manus-storage/business-ivoire-3d-logo_de8f6d54.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,

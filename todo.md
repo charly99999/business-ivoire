@@ -32,6 +32,12 @@
 - [x] Ajouter les données d’annonce essentielles : titre, prix, catégorie, localisation, état et photos.
 - [x] Construire la création, la consultation, la recherche et les favoris d’annonces.
 - [ ] Ajouter des états de chargement, erreur, reprise et pagination adaptés à une audience importante.
+- [x] Auditer chaque écran et supprimer toute donnée fictive, ambiguë ou trompeuse.
+- [x] Reconcevoir l’interface marketplace selon une direction visuelle cohérente et non générique.
+- [x] Créer des catégories illustrées et reconnaissables, avec iconographie dédiée.
+- [x] Réparer le choix, l’ajout, la suppression et l’affichage de plusieurs photos d’annonce.
+- [x] Revoir les profils et paramètres afin de n’afficher que des informations exactes et éditables.
+- [x] Valider les parcours critiques avant toute nouvelle livraison.
 - [x] Recentrer l’application sur les annonces, recherche, favoris et messagerie acheteur-vendeur avant les fonctions sociales.
 - [x] Couvrir toutes les catégories d’annonces via une taxonomie et des filtres extensibles.
 - [x] Rendre le prix en FCFA obligatoire dans le formulaire, les API et l’affichage de chaque annonce.

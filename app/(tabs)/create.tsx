@@ -2,103 +2,32 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-import { Avatar, Card, Tag } from "@/components/business-ui";
+import { Avatar, Card } from "@/components/business-ui";
 import { ScreenContainer } from "@/components/screen-container";
-import { useBusiness, type FeedPost } from "@/lib/business-context";
+import { useBusiness } from "@/lib/business-context";
 import { imageUriToDataUri } from "@/lib/media";
 import { trpc } from "@/lib/trpc";
 
-const OPTIONS: { label: string; icon: React.ComponentProps<typeof MaterialIcons>["name"] }[] = [
-  { label: "Véhicules", icon: "directions-car" }, { label: "Immobilier", icon: "apartment" }, { label: "Électronique", icon: "devices" }, { label: "Emploi & services", icon: "work" }, { label: "Agriculture", icon: "agriculture" }, { label: "Maison & loisirs", icon: "weekend" }, { label: "Mode & beauté", icon: "checkroom" }, { label: "Autres", icon: "category" },
-];
+const CATEGORIES = ["Véhicules", "Immobilier", "Électronique", "Emploi & services", "Agriculture", "Maison & loisirs", "Mode & beauté", "Autres"];
 
 export default function CreateScreen() {
-  const { profile, publishPost } = useBusiness();
-  const [text, setText] = useState("");
-  const [category, setCategory] = useState("Immobilier");
-  const [price, setPrice] = useState("");
-  const [photoUris, setPhotoUris] = useState<string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
+  const { profile } = useBusiness();
+  const [title, setTitle] = useState(""); const [description, setDescription] = useState(""); const [price, setPrice] = useState(""); const [category, setCategory] = useState(CATEGORIES[0]); const [photos, setPhotos] = useState<string[]>([]); const [submitting, setSubmitting] = useState(false);
   const createListing = trpc.marketplace.create.useMutation();
-
-  const pickPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ allowsMultipleSelection: true, selectionLimit: 8, quality: 0.55 });
-    if (!result.canceled) setPhotoUris(result.assets.map((asset) => asset.uri).slice(0, 8));
+  const pickPhotos = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ allowsMultipleSelection: true, selectionLimit: Math.max(1, 8 - photos.length), quality: 0.72 });
+    if (!result.canceled) setPhotos((current) => [...current, ...result.assets.map((asset) => asset.uri)].slice(0, 8));
   };
-
   const submit = async () => {
-    if (!text.trim()) {
-      Alert.alert("Ajoutez un message", "Décrivez l’opportunité ou l’information que vous souhaitez partager.");
-      return;
-    }
     const numericPrice = Number(price.replace(/\s/g, ""));
-    if (!Number.isInteger(numericPrice) || numericPrice < 1) {
-      Alert.alert("Prix obligatoire", "Saisissez un prix entier supérieur à zéro en FCFA.");
-      return;
-    }
-    try {
-      setSubmitting(true);
-      const images = await Promise.all(photoUris.map((uri) => imageUriToDataUri(uri)));
-      if (images.length) await createListing.mutateAsync({ title: text.trim().slice(0, 80), description: text.trim(), price: numericPrice, category, location: profile.location || "Abidjan, Côte d’Ivoire", condition: "used", images });
-      else await publishPost(text, category as FeedPost["tag"]);
-      setText("");
-      setPrice("");
-      setPhotoUris([]);
-      Alert.alert("Publication créée", "Votre contenu est maintenant visible dans la communauté.", [{ text: "Voir le fil", onPress: () => router.replace("/") }]);
-    } catch {
-      Alert.alert("Publication non enregistrée", "Vérifiez votre connexion puis réessayez.");
-    } finally {
-      setSubmitting(false);
-    }
+    if (title.trim().length < 3 || description.trim().length < 10) return Alert.alert("Annonce incomplète", "Ajoutez un titre et une description détaillée.");
+    if (!Number.isInteger(numericPrice) || numericPrice < 1) return Alert.alert("Prix obligatoire", "Saisissez un prix entier supérieur à zéro en FCFA.");
+    if (!photos.length) return Alert.alert("Ajoutez une photo", "Choisissez au moins une photo ; vous pouvez en ajouter jusqu’à huit.");
+    try { setSubmitting(true); const images = await Promise.all(photos.map((uri) => imageUriToDataUri(uri))); await createListing.mutateAsync({ title: title.trim(), description: description.trim(), price: numericPrice, category, location: profile.location || "Abidjan, Côte d’Ivoire", condition: "used", images }); setTitle(""); setDescription(""); setPrice(""); setPhotos([]); Alert.alert("Annonce publiée", "Votre annonce est désormais visible dans la marketplace.", [{ text: "Voir les annonces", onPress: () => router.replace("/discover" as never) }]); } catch { Alert.alert("Publication impossible", "Vérifiez votre connexion et réessayez."); } finally { setSubmitting(false); }
   };
-
-  return (
-    <ScreenContainer style={styles.screen}>
-      <View style={styles.header}><Text style={styles.title}>Créer</Text><TouchableOpacity activeOpacity={0.7} onPress={submit} style={styles.publishSmall}><Text style={styles.publishSmallText}>Publier</Text></TouchableOpacity></View>
-      <Card style={styles.composerCard}>
-        <View style={styles.identity}><Avatar initials="BI" uri={profile.selfieUri} /><View><Text style={styles.name}>{profile.name}</Text><Tag label="Public" tint="blue" /></View></View>
-        <TextInput multiline placeholder="Quelle opportunité souhaitez-vous partager ?" placeholderTextColor="#7A858F" style={styles.input} textAlignVertical="top" value={text} onChangeText={setText} />
-        <View style={styles.priceField}><TextInput value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="Prix obligatoire" placeholderTextColor="#7A858F" style={styles.priceInput} /><Text style={styles.currency}>FCFA</Text></View>
-        {photoUris.length ? <View style={styles.previewWrap}>{photoUris.map((photoUri, index) => <View key={photoUri} style={styles.previewItem}><Image source={{ uri: photoUri }} style={styles.preview} /><TouchableOpacity activeOpacity={0.7} onPress={() => setPhotoUris((items) => items.filter((_, itemIndex) => itemIndex !== index))} style={styles.removePhoto}><MaterialIcons name="close" size={18} color="#FFFFFF" /></TouchableOpacity></View>)}</View> : null}
-        <View style={styles.divider} />
-        <Text style={styles.fieldLabel}>Catégorie</Text>
-        <View style={styles.optionGrid}>{OPTIONS.map((option) => <TouchableOpacity key={option.label} onPress={() => setCategory(option.label)} activeOpacity={0.7} style={[styles.option, category === option.label && styles.optionSelected]}><MaterialIcons name={option.icon} size={20} color={category === option.label ? "#FFFFFF" : "#0B6E8A"} /><Text style={[styles.optionText, category === option.label && styles.optionTextSelected]}>{option.label}</Text></TouchableOpacity>)}</View>
-      </Card>
-      <Card style={styles.attachments}><Text style={styles.attachmentTitle}>Ajouter à votre publication</Text><View style={styles.attachmentRow}><TouchableOpacity activeOpacity={0.7} onPress={pickPhoto} style={styles.attachmentItem}><MaterialIcons name="photo-library" size={21} color="#1D8A5B" /><Text style={styles.attachmentText}>Photo</Text></TouchableOpacity><TouchableOpacity activeOpacity={0.7} onPress={() => Alert.alert("Reels à venir", "Le format vidéo est prévu pour une itération ultérieure, avec traitement vidéo serveur dédié.")} style={styles.attachmentItem}><MaterialIcons name="play-circle-outline" size={21} color="#E8752B" /><Text style={styles.attachmentText}>Reel</Text></TouchableOpacity><TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/selfie" as never)} style={styles.attachmentItem}><MaterialIcons name="verified-user" size={21} color="#0B6E8A" /><Text style={styles.attachmentText}>Selfie</Text></TouchableOpacity></View></Card>
-      <TouchableOpacity disabled={submitting} activeOpacity={0.78} onPress={submit} style={[styles.publishButton, submitting && styles.publishButtonDisabled]}><MaterialIcons name="send" size={20} color="#FFFFFF" /><Text style={styles.publishButtonText}>{submitting ? "Publication…" : "Publier dans la communauté"}</Text></TouchableOpacity>
-    </ScreenContainer>
-  );
+  return <ScreenContainer style={s.screen}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}><View style={s.header}><Text style={s.heading}>Nouvelle annonce</Text><Text style={s.step}>1/1</Text></View><Card style={s.card}><View style={s.seller}><Avatar initials="BI" uri={profile.selfieUri} /><View><Text style={s.sellerName}>{profile.name}</Text><Text style={s.sellerHint}>Publication dans votre boutique</Text></View></View><Text style={s.label}>Titre</Text><TextInput value={title} onChangeText={setTitle} placeholder="Ex. Toyota RAV4 2020 en très bon état" placeholderTextColor="#89938B" maxLength={80} style={s.titleInput} /><Text style={s.label}>Description</Text><TextInput value={description} onChangeText={setDescription} placeholder="Décrivez l’article, son état, la livraison et les détails utiles…" placeholderTextColor="#89938B" multiline textAlignVertical="top" style={s.descriptionInput} /><Text style={s.label}>Prix</Text><View style={s.price}><TextInput value={price} onChangeText={setPrice} placeholder="0" placeholderTextColor="#89938B" keyboardType="number-pad" style={s.priceInput} /><Text style={s.fcfa}>FCFA</Text></View><View style={s.photoLabel}><Text style={s.label}>Photos</Text><Text style={s.count}>{photos.length}/8</Text></View>{photos.length ? <View style={s.grid}>{photos.map((uri, index) => <View key={uri} style={s.photoWrap}><Image source={{ uri }} style={s.photo} /><TouchableOpacity onPress={() => setPhotos((items) => items.filter((_, current) => current !== index))} style={s.remove}><MaterialIcons name="close" size={17} color="#FFFFFF" /></TouchableOpacity></View>)}</View> : null}<TouchableOpacity onPress={pickPhotos} disabled={photos.length >= 8} style={s.addPhotos}><MaterialIcons name="add-photo-alternate" size={21} color="#176B35" /><Text style={s.addPhotosText}>{photos.length ? "Ajouter d’autres photos" : "Choisir des photos"}</Text></TouchableOpacity><Text style={s.label}>Catégorie</Text><View style={s.categoryGrid}>{CATEGORIES.map((item) => <TouchableOpacity key={item} onPress={() => setCategory(item)} style={[s.category, category === item && s.categorySelected]}><Text style={[s.categoryText, category === item && s.categoryTextSelected]}>{item}</Text></TouchableOpacity>)}</View></Card><TouchableOpacity disabled={submitting} onPress={submit} style={[s.publish, submitting && s.disabled]}><MaterialIcons name="sell" size={20} color="#FFFFFF" /><Text style={s.publishText}>{submitting ? "Publication…" : "Publier l’annonce"}</Text></TouchableOpacity></ScrollView></ScreenContainer>;
 }
 
-const styles = StyleSheet.create({
-  screen: { backgroundColor: "#F7F5EF", padding: 14 },
-  header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
-  title: { color: "#16202A", fontSize: 27, fontWeight: "900", letterSpacing: -0.6 },
-  publishSmall: { backgroundColor: "#E2F2F6", borderRadius: 12, paddingHorizontal: 13, paddingVertical: 9 },
-  publishSmallText: { color: "#0B6E8A", fontSize: 13, fontWeight: "800" },
-  composerCard: { padding: 15 },
-  identity: { alignItems: "center", flexDirection: "row", gap: 10 },
-  name: { color: "#16202A", fontSize: 15, fontWeight: "800", marginBottom: 3 },
-  input: { color: "#16202A", fontSize: 17, lineHeight: 24, minHeight: 180, paddingTop: 22 },
-  priceField: { alignItems: "center", backgroundColor: "#F7F4EA", borderColor: "#D5A72C", borderRadius: 12, borderWidth: 1, flexDirection: "row", marginBottom: 14, paddingHorizontal: 12 }, priceInput: { color: "#102015", flex: 1, fontSize: 15, fontWeight: "800", minHeight: 46 }, currency: { color: "#176B35", fontSize: 13, fontWeight: "900" },
-  previewWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }, previewItem: { position: "relative", width: "48%" },
-  preview: { borderRadius: 14, height: 120, resizeMode: "cover", width: "100%" },
-  removePhoto: { alignItems: "center", backgroundColor: "rgba(22,32,42,0.78)", borderRadius: 16, height: 32, justifyContent: "center", position: "absolute", right: 9, top: 9, width: 32 },
-  divider: { backgroundColor: "#EEECE6", height: 1, marginBottom: 15 },
-  fieldLabel: { color: "#667085", fontSize: 12, fontWeight: "800", letterSpacing: 0.3, textTransform: "uppercase" },
-  optionGrid: { gap: 8, marginTop: 10 },
-  option: { alignItems: "center", borderColor: "#D8E5E8", borderRadius: 13, borderWidth: 1, flexDirection: "row", gap: 9, minHeight: 44, paddingHorizontal: 12 },
-  optionSelected: { backgroundColor: "#0B6E8A", borderColor: "#0B6E8A" },
-  optionText: { color: "#0B6E8A", fontSize: 13, fontWeight: "800" },
-  optionTextSelected: { color: "#FFFFFF" },
-  attachments: { marginTop: 13, padding: 15 },
-  attachmentTitle: { color: "#29333D", fontSize: 14, fontWeight: "800" },
-  attachmentRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 14 },
-  attachmentItem: { alignItems: "center", gap: 5, minWidth: 70 },
-  attachmentText: { color: "#667085", fontSize: 12, fontWeight: "700" },
-  publishButton: { alignItems: "center", backgroundColor: "#0B6E8A", borderRadius: 15, flexDirection: "row", gap: 9, justifyContent: "center", marginTop: 16, minHeight: 52 },
-  publishButtonDisabled: { opacity: 0.65 },
-  publishButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
-});
+const s = StyleSheet.create({ screen:{backgroundColor:"#F7F4EA"}, content:{padding:16,paddingBottom:32}, header:{alignItems:"center",flexDirection:"row",justifyContent:"space-between",marginBottom:16}, heading:{color:"#102015",fontSize:26,fontWeight:"900"}, step:{color:"#176B35",fontSize:13,fontWeight:"900"}, card:{gap:10,padding:16}, seller:{alignItems:"center",flexDirection:"row",gap:10,marginBottom:6}, sellerName:{color:"#102015",fontSize:15,fontWeight:"900"}, sellerHint:{color:"#647067",fontSize:11,marginTop:2}, label:{color:"#58675C",fontSize:11,fontWeight:"900",letterSpacing:.4,marginTop:7,textTransform:"uppercase"}, titleInput:{borderBottomColor:"#E2DED2",borderBottomWidth:1,color:"#102015",fontSize:16,fontWeight:"800",minHeight:45}, descriptionInput:{backgroundColor:"#F8F7F1",borderColor:"#E2DED2",borderRadius:12,borderWidth:1,color:"#102015",fontSize:14,minHeight:110,padding:11}, price:{alignItems:"center",backgroundColor:"#F8F7F1",borderColor:"#D5A72C",borderRadius:12,borderWidth:1,flexDirection:"row",paddingHorizontal:12}, priceInput:{color:"#102015",flex:1,fontSize:17,fontWeight:"900",minHeight:48}, fcfa:{color:"#176B35",fontSize:13,fontWeight:"900"}, photoLabel:{alignItems:"center",flexDirection:"row",justifyContent:"space-between"}, count:{color:"#176B35",fontSize:12,fontWeight:"900"}, grid:{flexDirection:"row",flexWrap:"wrap",gap:8}, photoWrap:{position:"relative",width:"48%"}, photo:{borderRadius:12,height:118,width:"100%"}, remove:{alignItems:"center",backgroundColor:"rgba(0,0,0,.7)",borderRadius:16,height:30,justifyContent:"center",position:"absolute",right:7,top:7,width:30}, addPhotos:{alignItems:"center",backgroundColor:"#EDF5EB",borderColor:"#B8D5BA",borderRadius:12,borderStyle:"dashed",borderWidth:1,flexDirection:"row",gap:8,justifyContent:"center",minHeight:50}, addPhotosText:{color:"#176B35",fontSize:13,fontWeight:"900"}, categoryGrid:{flexDirection:"row",flexWrap:"wrap",gap:7}, category:{backgroundColor:"#F7F4EA",borderColor:"#E2DED2",borderRadius:999,borderWidth:1,paddingHorizontal:11,paddingVertical:8}, categorySelected:{backgroundColor:"#176B35",borderColor:"#176B35"}, categoryText:{color:"#36513B",fontSize:11,fontWeight:"800"}, categoryTextSelected:{color:"#FFFFFF"}, publish:{alignItems:"center",backgroundColor:"#176B35",borderRadius:14,flexDirection:"row",gap:8,justifyContent:"center",marginTop:15,minHeight:54}, disabled:{opacity:.6}, publishText:{color:"#FFFFFF",fontSize:15,fontWeight:"900"} });

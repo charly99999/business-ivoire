@@ -1,34 +1,32 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { Avatar } from "@/components/business-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { relativeTime, useBusiness } from "@/lib/business-context";
-import { trpc } from "@/lib/trpc";
+import { fetchSupabaseMessages, sendSupabaseMessage } from "@/lib/supabase-business";
 
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const conversationId = Number(id);
-  const { conversations, currentUserId, sendMessage } = useBusiness();
-  const conversation = conversations.find((item) => item.id === conversationId);
-  const messageQuery = trpc.conversations.messages.useQuery({ conversationId }, { enabled: Number.isInteger(conversationId) && conversationId > 0 });
-  const [draft, setDraft] = useState("");
+  const { currentUserId } = useBusiness();
+  const [messages, setMessages] = useState<{ id: string; sender_id: string; body: string; created_at: string }[]>([]); const [draft, setDraft] = useState(""); const [sending, setSending] = useState(false);
+  const loadMessages = useCallback(async () => { if (!id) return; try { setMessages(await fetchSupabaseMessages(id)); } catch { setMessages([]); } }, [id]);
+  useEffect(() => { void loadMessages(); }, [loadMessages]);
 
   const send = async () => {
     const clean = draft.trim();
     if (!clean) return;
-    await sendMessage(conversationId, clean);
-    setDraft("");
+    try { setSending(true); await sendSupabaseMessage(id, clean); setDraft(""); await loadMessages(); } finally { setSending(false); }
   };
 
   return (
     <ScreenContainer edges={["top", "left", "right"]} style={styles.screen}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.screen}>
-        <View style={styles.header}><TouchableOpacity activeOpacity={0.7} onPress={() => router.back()}><MaterialIcons name="arrow-back" size={25} color="#16202A" /></TouchableOpacity><View style={styles.contact}><Avatar initials={conversation?.initials ?? "BI"} size="sm" color={conversation?.color ?? "#0B6E8A"} /><View><Text style={styles.name}>{conversation?.name ?? "Conversation"}</Text><Text style={styles.status}>Messagerie sécurisée</Text></View></View><TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/settings" as never)}><MaterialIcons name="info-outline" size={23} color="#0B6E8A" /></TouchableOpacity></View>
-        <View style={styles.messages}>{(messageQuery.data ?? []).map((message) => <View key={message.id} style={message.senderId === currentUserId ? styles.sent : styles.received}><Text style={message.senderId === currentUserId ? styles.sentText : styles.receivedText}>{message.body}</Text><Text style={message.senderId === currentUserId ? styles.sentTime : styles.receivedTime}>{relativeTime(message.createdAt)}</Text></View>)}{!messageQuery.data?.length ? <View style={styles.blank}><Text style={styles.blankText}>Démarrez la conversation avec un premier message.</Text></View> : null}</View>
-        <View style={styles.composer}><TextInput placeholder="Écrire un message…" placeholderTextColor="#7A858F" returnKeyType="send" onSubmitEditing={() => void send()} value={draft} onChangeText={setDraft} style={styles.input} /><TouchableOpacity accessibilityLabel="Envoyer" activeOpacity={0.72} onPress={() => void send()} style={styles.send}><MaterialIcons name="send" size={19} color="#FFFFFF" /></TouchableOpacity></View>
+        <View style={styles.header}><TouchableOpacity activeOpacity={0.7} onPress={() => router.back()}><MaterialIcons name="arrow-back" size={25} color="#16202A" /></TouchableOpacity><View style={styles.contact}><Avatar initials="BI" size="sm" color="#0B6E8A" /><View><Text style={styles.name}>Conversation</Text><Text style={styles.status}>Messagerie sécurisée</Text></View></View><TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/settings" as never)}><MaterialIcons name="info-outline" size={23} color="#0B6E8A" /></TouchableOpacity></View>
+        <View style={styles.messages}>{messages.map((message) => <View key={message.id} style={message.sender_id === currentUserId ? styles.sent : styles.received}><Text style={message.sender_id === currentUserId ? styles.sentText : styles.receivedText}>{message.body}</Text><Text style={message.sender_id === currentUserId ? styles.sentTime : styles.receivedTime}>{relativeTime(message.created_at)}</Text></View>)}{!messages.length ? <View style={styles.blank}><Text style={styles.blankText}>Démarrez la conversation avec un premier message.</Text></View> : null}</View>
+        <View style={styles.composer}><TextInput placeholder="Écrire un message…" placeholderTextColor="#7A858F" returnKeyType="send" onSubmitEditing={() => void send()} value={draft} onChangeText={setDraft} style={styles.input} /><TouchableOpacity disabled={sending} accessibilityLabel="Envoyer" activeOpacity={0.72} onPress={() => void send()} style={styles.send}><MaterialIcons name="send" size={19} color="#FFFFFF" /></TouchableOpacity></View>
       </KeyboardAvoidingView>
     </ScreenContainer>
   );

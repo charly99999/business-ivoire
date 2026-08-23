@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { getApiBaseUrl } from "@/constants/oauth";
 import { useBusiness } from "@/lib/business-context";
-import * as Auth from "@/lib/_core/auth";
+import { supabase } from "@/lib/supabase";
 
 const BANNER = require("../assets/images/marketplace-banner.png");
 const LOGO = require("../assets/images/icon.png");
@@ -22,11 +21,14 @@ export function AuthGate({ children, accessOnly = false }: { children: React.Rea
   const submit = async () => {
     try {
       setBusy(true); setMessage(undefined);
-      const response = await fetch(`${getApiBaseUrl()}/api/auth/local/${mode === "signup" ? "signup" : "signin"}`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ name, email, password }) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Connexion indisponible.");
-      if (result.app_session_id) await Auth.setSessionToken(result.app_session_id);
-      if (result.user) await Auth.setUserInfo({ ...result.user, lastSignedIn: new Date(result.user.lastSignedIn) });
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { data: { display_name: name.trim() } } });
+        if (error) throw error;
+        if (!data.session) { setMessage("Compte créé. Consultez votre e-mail puis revenez vous connecter."); return; }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+      }
       await retryAuth();
     } catch (error) { setMessage(error instanceof Error ? error.message : "Connexion indisponible."); } finally { setBusy(false); }
   };

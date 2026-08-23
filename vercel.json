@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm vercel-build",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "cleanUrls": true
+}

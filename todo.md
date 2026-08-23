@@ -86,3 +86,26 @@
 - [x] Vérifier et documenter précisément la base de données et l’hébergement réellement utilisés, sans prétendre à Supabase ou à un hébergement gratuit non configuré.
 - [x] Diagnostiquer et corriger la capture selfie directe par caméra frontale sur iPhone et Android.
 - [x] Vérifier les autorisations natives caméra et l’envoi du selfie avant publication sur les deux plateformes.
+- [x] Reproduire le défaut confirmé : caméra selfie ne s’ouvre ni dans l’aperçu, ni dans le navigateur, ni dans l’application installée.
+- [x] Identifier la cause racine et corriger le démarrage de la caméra frontale sans proposer de galerie.
+- [ ] Obtenir une validation physique iPhone et Android avant de déclarer le selfie disponible.
+- [ ] Séparer le serveur Expo natif du serveur d’aperçu web statique afin de tester réellement dans Expo Go ou une build native.
+- [ ] Empêcher tout montage de CameraView en dehors de l’état de capture autorisé.
+- [x] Vérifier l’accès Vercel et la compatibilité de l’architecture actuelle avec un déploiement de production.
+- [x] Préparer la configuration et les variables de production nécessaires à Vercel.
+- [x] Valider le build puis demander confirmation avant la publication Vercel.
+- [x] Déployer Business Ivoire sur Vercel et vérifier l’URL de production.
+- [x] Créer le projet Vercel business-ivoire séparé et publier la version web Supabase confirmée.
+- [ ] Vérifier l’accès Supabase et inventorier les données MySQL et médias à préserver.
+- [x] Concevoir puis exécuter une migration sécurisée des données et fichiers vers Supabase.
+- [ ] Adapter l’API, l’authentification et le stockage à Supabase avec compatibilité Vercel.
+- [x] Adapter l’authentification, les profils, selfies, annonces, favoris et messagerie aux services Supabase sécurisés.
+- [ ] Valider les parcours marketplace et selfie après migration avant toute publication de production.
+- [x] Créer ou rattacher le compte Supabase correspondant au compte existant avant de migrer son profil et son annonce.
+- [x] Provisionner automatiquement le compte Supabase de migration et préparer sa confirmation e-mail sécurisée.
+- [ ] Mettre en pause le projet Supabase djassa-services, avec autorisation explicite, afin de libérer une place gratuite pour Business Ivoire.
+- [ ] Réutiliser le projet Supabase Afrique-business sans supprimer ses données, puis adapter son schéma à Business Ivoire.
+- [x] Vérifier la place libérée après suppression de djassa-services et créer le projet Supabase Business Ivoire séparé en eu-west-1.
+- [ ] Confirmer l’adresse e-mail Supabase puis tester sur appareil réel le selfie frontal, la publication et la messagerie.
+- [ ] Activer dans Supabase Auth la protection contre les mots de passe compromis avant ouverture large au public.
+- [ ] Migrer ou masquer les écrans sociaux, notifications, dashboard et groupes qui dépendent encore de l’ancien backend.

@@ -39,6 +39,9 @@
 - [x] Revoir les profils et paramètres afin de n’afficher que des informations exactes et éditables.
 - [x] Valider les parcours critiques avant toute nouvelle livraison.
 - [x] Corriger le menu rendu hors du fournisseur d’état et valider les écrans dépendants.
+- [x] Créer un écran de bienvenue iPhone avec transition professionnelle vers l’interface principale.
+- [x] Afficher un fil public partagé d’annonces et publications provenant de tous les utilisateurs.
+- [ ] Adapter les listes, chargements et erreurs à une audience importante sans bloquer l’interface.
 - [x] Recentrer l’application sur les annonces, recherche, favoris et messagerie acheteur-vendeur avant les fonctions sociales.
 - [x] Couvrir toutes les catégories d’annonces via une taxonomie et des filtres extensibles.
 - [x] Rendre le prix en FCFA obligatoire dans le formulaire, les API et l’affichage de chaque annonce.

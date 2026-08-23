@@ -92,7 +92,11 @@ export function registerOAuthRoutes(app: Express) {
       res.redirect(302, frontendUrl);
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      const frontendUrl =
+        process.env.EXPO_WEB_PREVIEW_URL ||
+        process.env.EXPO_PACKAGER_PROXY_URL ||
+        "http://localhost:8081";
+      res.redirect(302, `${frontendUrl}${frontendUrl.includes("?") ? "&" : "?"}error=oauth_unavailable`);
     }
   });
 

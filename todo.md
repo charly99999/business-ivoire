@@ -25,3 +25,4 @@
 - [x] Refondre l’accueil, les catégories, les annonces et la navigation avec une ergonomie de marketplace mobile.
 - [x] Adapter les composants aux longues listes, aux états vides, aux chargements et aux erreurs récupérables.
 - [x] Documenter les mesures nécessaires pour une exploitation à très grande échelle.
+- [x] Empêcher l’affichage brut d’une erreur OAuth dans le navigateur intégré mobile et rediriger proprement vers l’application.

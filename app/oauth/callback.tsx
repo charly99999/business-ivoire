@@ -4,7 +4,7 @@ import * as Auth from "@/lib/_core/auth";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text } from "react-native";
+import { ActivityIndicator, Pressable, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OAuthCallback() {
@@ -96,7 +96,7 @@ export default function OAuthCallback() {
         if (error) {
           console.error("[OAuth] Error parameter found:", error);
           setStatus("error");
-          setErrorMessage(error || "OAuth error occurred");
+          setErrorMessage("La connexion est temporairement indisponible. Votre compte n’a pas été modifié.");
           return;
         }
 
@@ -171,7 +171,7 @@ export default function OAuthCallback() {
             hasState: !!state,
           });
           setStatus("error");
-          setErrorMessage("Missing code or state parameter");
+          setErrorMessage("Le retour de connexion est incomplet. Vous pouvez reprendre depuis l’application.");
           return;
         }
 
@@ -226,7 +226,7 @@ export default function OAuthCallback() {
         console.error("[OAuth] Callback error:", error);
         setStatus("error");
         setErrorMessage(
-          error instanceof Error ? error.message : "Failed to complete authentication",
+          "La connexion n’a pas pu être finalisée pour le moment. Veuillez revenir à l’application puis réessayer.",
         );
       }
     };
@@ -241,28 +241,31 @@ export default function OAuthCallback() {
           <>
             <ActivityIndicator size="large" />
             <Text className="mt-4 text-base leading-6 text-center text-foreground">
-              Completing authentication...
+              Connexion sécurisée en cours…
             </Text>
           </>
         )}
         {status === "success" && (
           <>
             <Text className="text-base leading-6 text-center text-foreground">
-              Authentication successful!
+              Connexion réussie.
             </Text>
             <Text className="text-base leading-6 text-center text-foreground">
-              Redirecting...
+              Retour vers Business Ivoire…
             </Text>
           </>
         )}
         {status === "error" && (
           <>
             <Text className="mb-2 text-xl font-bold leading-7 text-error">
-              Authentication failed
+              Connexion indisponible
             </Text>
             <Text className="text-base leading-6 text-center text-foreground">
               {errorMessage}
             </Text>
+            <Pressable onPress={() => router.replace("/(tabs)")} className="mt-4 rounded-xl bg-primary px-5 py-3">
+              <Text className="text-center font-bold text-white">Retourner à l’application</Text>
+            </Pressable>
           </>
         )}
       </ThemedView>

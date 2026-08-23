@@ -53,3 +53,4 @@
 - [x] Finaliser et valider le parcours marketplace de bout en bout avant toute nouvelle livraison.
 - [x] Permettre la consultation publique et paginée des annonces tout en protégeant les actions de compte.
 - [x] Valider de bout en bout la création d’une annonce multi-photos et son affichage public.
+- [x] Embarquer le logo, la bannière et les illustrations 3D comme assets natifs pour éliminer les catégories vides sur iPhone.

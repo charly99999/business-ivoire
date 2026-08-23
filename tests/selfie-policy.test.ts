@@ -9,6 +9,8 @@ describe("règles de médias Business Ivoire", () => {
     expect(selfieScreen).toContain("takePictureAsync");
     expect(selfieScreen).toContain("setSelfie");
     expect(selfieScreen).toContain("Caméra frontale obligatoire");
+    expect(selfieScreen).toContain("onPress={startCamera}");
+    expect(selfieScreen).not.toContain("web-preview");
     expect(selfieScreen).not.toContain("expo-image-picker");
     expect(selfieScreen).not.toContain("launchCameraAsync");
     expect(selfieScreen).not.toContain("launchImageLibraryAsync");

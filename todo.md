@@ -84,3 +84,5 @@
 - [x] Empêcher l’arrêt normal de Metro après le bundle web, responsable de l’échec d’aperçu sur téléphone.
 - [x] Remplacer l’aperçu Metro éphémère par un serveur statique persistant issu de l’export web Expo.
 - [x] Vérifier et documenter précisément la base de données et l’hébergement réellement utilisés, sans prétendre à Supabase ou à un hébergement gratuit non configuré.
+- [x] Diagnostiquer et corriger la capture selfie directe par caméra frontale sur iPhone et Android.
+- [x] Vérifier les autorisations natives caméra et l’envoi du selfie avant publication sur les deux plateformes.

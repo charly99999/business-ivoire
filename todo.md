@@ -62,3 +62,6 @@
 - [x] Rendre le parcours selfie utilisable sur iPhone et web, avec erreurs actionnables et reprise fiable.
 - [x] Vérifier de bout en bout selfie, publication, liste publique et fiche vendeur après le correctif.
 - [x] Stabiliser le serveur de développement afin que l’API selfie reste disponible pendant l’utilisation de l’application.
+- [x] Verrouiller le selfie sur une capture directe caméra frontale, sans aucun parcours galerie.
+- [x] Préserver la galerie uniquement pour le choix de photo de couverture.
+- [x] Valider et documenter la séparation stricte entre selfie direct et couverture galerie.

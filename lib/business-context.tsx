@@ -195,6 +195,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     setSelfie: async (image) => {
       await selfieMutation.mutateAsync({ image });
       await utils.profile.mine.invalidate();
+      await utils.marketplace.publicList.invalidate();
     },
     setCover: async (image) => {
       await coverMutation.mutateAsync({ image });

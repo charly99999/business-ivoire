@@ -1,6 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -11,6 +11,7 @@ type Step = "intro" | "camera" | "review";
 
 export default function SelfieScreen() {
   const { setSelfie } = useBusiness();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [step, setStep] = useState<Step>("intro");
   const [previewUri, setPreviewUri] = useState<string>();
@@ -41,7 +42,7 @@ export default function SelfieScreen() {
     if (!selfieData) return;
     try {
       await setSelfie(selfieData);
-      Alert.alert("Selfie enregistré", "Votre photo prise en direct est désormais associée à votre profil.", [{ text: "Continuer", onPress: () => router.back() }]);
+      Alert.alert("Selfie enregistré", "Votre profil vendeur est maintenant vérifié. Vous pouvez publier votre annonce.", [{ text: "Continuer", onPress: () => returnTo === "create" ? router.replace("/create" as never) : router.back() }]);
     } catch {
       Alert.alert("Enregistrement impossible", "La photo n’a pas pu être protégée sur le serveur. Vérifiez votre connexion puis réessayez.");
     }

@@ -14,7 +14,7 @@ const categories = ["Tout", "Véhicules", "Immobilier", "Électronique", "Emploi
 
 export default function DiscoverScreen() {
   const [search, setSearch] = useState(""); const [category, setCategory] = useState("Tout"); const { authenticated } = useBusiness();
-  const listings = trpc.marketplace.publicList.useInfiniteQuery({ limit: 20 }, { getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined });
+  const listings = trpc.marketplace.publicList.useInfiniteQuery({ limit: 20 }, { getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined, refetchOnMount: "always", refetchOnReconnect: true });
   const utils = trpc.useUtils();
   const toggleFavorite = trpc.marketplace.toggleFavorite.useMutation({ onSuccess: () => void utils.marketplace.publicList.invalidate() });
   const data = useMemo(() => (listings.data?.pages.flatMap((page) => page.items) ?? []).filter((item) => (category === "Tout" || item.category === category) && `${item.title} ${item.description} ${item.location}`.toLowerCase().includes(search.toLowerCase())), [listings.data, category, search]);

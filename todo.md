@@ -54,3 +54,7 @@
 - [x] Permettre la consultation publique et paginée des annonces tout en protégeant les actions de compte.
 - [x] Valider de bout en bout la création d’une annonce multi-photos et son affichage public.
 - [x] Embarquer le logo, la bannière et les illustrations 3D comme assets natifs pour éliminer les catégories vides sur iPhone.
+- [x] Diagnostiquer et corriger l’absence d’annonces après publication dans les listes publiques.
+- [x] Exiger un selfie de vérification avant toute publication d’annonce, côté interface et côté serveur.
+- [x] Afficher clairement l’identité et le statut de vérification du vendeur sur chaque annonce.
+- [x] Revalider de bout en bout la publication, la visibilité publique et le contact vendeur.

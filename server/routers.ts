@@ -106,6 +106,10 @@ export const appRouter = router({
     toggleFavorite: protectedProcedure.input(z.object({ listingId: z.number().int().positive() })).mutation(({ ctx, input }) => db.toggleListingFavorite(ctx.user.id, input.listingId)),
     create: protectedProcedure.input(z.object({ title: z.string().trim().min(3).max(160), description: z.string().trim().min(10).max(5000), price: z.number().int().positive(), category: z.string().trim().min(2).max(80), location: z.string().trim().min(2).max(160), condition: z.enum(["new", "used", "service"]), images: z.array(z.string().min(50)).min(1).max(8) })).mutation(async ({ ctx, input }) => {
       enforceRateLimit(ctx.user.id, "listing", 6, 60 * 60_000);
+      const profile = await db.getMyProfile(ctx.user.id, ctx.user.name);
+      if (profile.profile.identityStatus !== "selfie_captured" || !profile.profile.selfieUrl) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Prenez et confirmez votre selfie de vérification avant de publier une annonce." });
+      }
       const images = await Promise.all(input.images.map((image) => storeImage(ctx.user.id, "listings", image)));
       return db.createListing(ctx.user.id, { ...input, images: images.map((image) => ({ key: image.key, url: image.url })) }, ctx.user.name);
     }),

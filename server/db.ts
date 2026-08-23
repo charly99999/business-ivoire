@@ -33,6 +33,7 @@ const publicProfileFields = {
   category: profiles.category,
   location: profiles.location,
   coverUrl: profiles.coverUrl,
+  identityStatus: profiles.identityStatus,
 };
 
 export async function getDb() {
@@ -90,7 +91,10 @@ export async function getUserById(id: number) {
 
 export async function createListing(sellerId: number, input: { title: string; description: string; price: number; category: string; location: string; condition: "new" | "used" | "service"; images: Array<{ key: string; url: string }> }, sellerName?: string | null) {
   const db = requireDb(await getDb());
-  await ensureProfile(sellerId, sellerName);
+  const profile = await ensureProfile(sellerId, sellerName);
+  if (profile.identityStatus !== "selfie_captured" || !profile.selfieUrl) {
+    throw new Error("SELFIE_VERIFICATION_REQUIRED");
+  }
   const inserted = await db.insert(listings).values({ sellerId, title: input.title, description: input.description, price: input.price, category: input.category, location: input.location, condition: input.condition });
   const listingId = Number(inserted[0].insertId);
   if (input.images.length) await db.insert(listingImages).values(input.images.map((image, sortOrder) => ({ listingId, storageKey: image.key, url: image.url, sortOrder })));
@@ -104,8 +108,10 @@ export async function listPublicListings(input: { cursor?: { createdAt: Date; id
     lt(listings.createdAt, input.cursor.createdAt),
     and(eq(listings.createdAt, input.cursor.createdAt), lt(listings.id, input.cursor.id)),
   ) : undefined;
-  const where = cursorFilter ? and(eq(listings.status, "active"), cursorFilter) : eq(listings.status, "active");
-  const rows = await db.select().from(listings).where(where).orderBy(desc(listings.createdAt), desc(listings.id)).limit(limit + 1);
+  const baseFilter = and(eq(listings.status, "active"), eq(profiles.identityStatus, "selfie_captured"));
+  const where = cursorFilter ? and(baseFilter, cursorFilter) : baseFilter;
+  const listingRows = await db.select({ listing: listings }).from(listings).innerJoin(profiles, eq(profiles.userId, listings.sellerId)).where(where).orderBy(desc(listings.createdAt), desc(listings.id)).limit(limit + 1);
+  const rows = listingRows.map((row) => row.listing);
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
   const items = await Promise.all(page.map(async (listing) => {
@@ -119,7 +125,7 @@ export async function listPublicListings(input: { cursor?: { createdAt: Date; id
 
 export async function getListing(id: number) {
   const db = requireDb(await getDb());
-  const listing = (await db.select().from(listings).where(eq(listings.id, id)).limit(1))[0];
+  const listing = (await db.select({ listing: listings }).from(listings).innerJoin(profiles, eq(profiles.userId, listings.sellerId)).where(and(eq(listings.id, id), eq(listings.status, "active"), eq(profiles.identityStatus, "selfie_captured"))).limit(1))[0]?.listing;
   if (!listing) return null;
   const images = await db.select().from(listingImages).where(eq(listingImages.listingId, id)).orderBy(listingImages.sortOrder);
   const seller = (await db.select({ ...publicProfileFields }).from(profiles).where(eq(profiles.userId, listing.sellerId)).limit(1))[0] ?? null;

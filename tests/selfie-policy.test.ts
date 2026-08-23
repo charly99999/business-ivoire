@@ -8,7 +8,9 @@ describe("règles de médias Business Ivoire", () => {
     expect(selfieScreen).toContain('facing="front"');
     expect(selfieScreen).toContain("takePictureAsync");
     expect(selfieScreen).toContain("setSelfie");
-    expect(selfieScreen).not.toContain("expo-image-picker");
+    expect(selfieScreen).toContain("launchCameraAsync");
+    expect(selfieScreen).toContain("ImagePicker.CameraType.front");
+    expect(selfieScreen).not.toContain("launchImageLibraryAsync");
   });
 
   it("autorise le choix de galerie seulement pour la couverture professionnelle", async () => {

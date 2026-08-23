@@ -58,3 +58,7 @@
 - [x] Exiger un selfie de vérification avant toute publication d’annonce, côté interface et côté serveur.
 - [x] Afficher clairement l’identité et le statut de vérification du vendeur sur chaque annonce.
 - [x] Revalider de bout en bout la publication, la visibilité publique et le contact vendeur.
+- [x] Diagnostiquer le blocage actuel de capture, d’autorisation ou de sauvegarde du selfie.
+- [x] Rendre le parcours selfie utilisable sur iPhone et web, avec erreurs actionnables et reprise fiable.
+- [x] Vérifier de bout en bout selfie, publication, liste publique et fiche vendeur après le correctif.
+- [x] Stabiliser le serveur de développement afin que l’API selfie reste disponible pendant l’utilisation de l’application.

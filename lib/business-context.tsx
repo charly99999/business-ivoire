@@ -1,8 +1,11 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+
+import { getApiBaseUrl } from "@/constants/oauth";
+import { useAuth } from "@/hooks/use-auth";
+import { trpc } from "@/lib/trpc";
 
 export type FeedPost = {
-  id: string;
+  id: number;
   author: string;
   role: string;
   place: string;
@@ -14,10 +17,11 @@ export type FeedPost = {
   comments: number;
   reacted: boolean;
   tag: "Immobilier" | "Entrepreneuriat" | "Opportunité";
+  mediaType: "text" | "photo" | "reel" | "live";
 };
 
 export type Conversation = {
-  id: string;
+  id: number;
   name: string;
   initials: string;
   preview: string;
@@ -26,7 +30,7 @@ export type Conversation = {
   color: string;
 };
 
-type Profile = {
+export type Profile = {
   name: string;
   category: string;
   location: string;
@@ -34,149 +38,188 @@ type Profile = {
   bio: string;
   selfieUri?: string;
   coverUri?: string;
+  identityStatus: "pending" | "selfie_captured" | "approved" | "rejected";
+  phone?: string;
+  contactEmail?: string;
+  locked: boolean;
 };
 
 type BusinessContextValue = {
   posts: FeedPost[];
   profile: Profile;
   conversations: Conversation[];
-  hydrated: boolean;
-  publishPost: (text: string, category: FeedPost["tag"]) => void;
-  toggleReaction: (id: string) => void;
-  setSelfieUri: (uri: string) => void;
-  setCoverUri: (uri: string) => void;
-  sendMessage: (id: string, body: string) => void;
+  notifications: Array<{ id: number; message: string; createdAt: Date; readAt: Date | null; actor: { displayName: string } | null; kind: string }>;
+  authenticated: boolean;
+  authLoading: boolean;
+  loading: boolean;
+  error: string | null;
+  currentUserId?: number;
+  refreshAll: () => Promise<void>;
+  publishPost: (text: string, category: FeedPost["tag"], mediaImage?: string) => Promise<void>;
+  toggleReaction: (id: number) => Promise<void>;
+  setSelfie: (image: string) => Promise<void>;
+  setCover: (image: string) => Promise<void>;
+  updateProfile: (input: Partial<Pick<Profile, "name" | "bio" | "category" | "location" | "phone" | "contactEmail" | "locked">>) => Promise<void>;
+  sendMessage: (id: number, body: string) => Promise<void>;
+  markNotificationRead: (id: number) => Promise<void>;
+  logout: () => Promise<void>;
 };
-
-const CACHE_KEY = "business-ivoire-mobile-state";
-
-const initialPosts: FeedPost[] = [
-  {
-    id: "post-1",
-    author: "Aïcha Koné",
-    role: "Conseillère immobilière",
-    place: "Cocody, Abidjan",
-    avatar: "AK",
-    publishedAt: "Il y a 18 min",
-    text: "Nouvelle opportunité à Angré : un appartement lumineux de 3 pièces, proche des commerces et immédiatement disponible. Écrivez-moi pour organiser une visite.",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
-    reactions: 36,
-    comments: 8,
-    reacted: false,
-    tag: "Immobilier",
-  },
-  {
-    id: "post-2",
-    author: "Kader Traoré",
-    role: "Fondateur, Atelier Kôrô",
-    place: "Plateau, Abidjan",
-    avatar: "KT",
-    publishedAt: "Il y a 52 min",
-    text: "Nous ouvrons trois postes pour renforcer notre équipe commerciale. Une belle occasion pour les profils qui aiment le terrain, le service client et les résultats concrets.",
-    reactions: 58,
-    comments: 14,
-    reacted: true,
-    tag: "Entrepreneuriat",
-  },
-  {
-    id: "post-3",
-    author: "Business Ivoire",
-    role: "Communauté professionnelle",
-    place: "Abidjan, Côte d’Ivoire",
-    avatar: "BI",
-    publishedAt: "Hier",
-    text: "Cette semaine, partagez une initiative qui fait avancer votre quartier, votre entreprise ou votre projet. Les meilleures contributions seront mises en avant dans la communauté.",
-    reactions: 124,
-    comments: 27,
-    reacted: false,
-    tag: "Opportunité",
-  },
-];
-
-const initialProfile: Profile = {
-  name: "Business Ivoire",
-  category: "Immobilier & Entrepreneuriat",
-  location: "Abidjan, Côte d’Ivoire",
-  followers: 2480,
-  bio: "La communauté qui relie les idées, les talents et les opportunités qui font grandir la Côte d’Ivoire.",
-};
-
-const initialConversations: Conversation[] = [
-  { id: "aicha", name: "Aïcha Koné", initials: "AK", preview: "Je vous envoie le dossier cet après-midi.", time: "10:42", unread: 2, color: "#E8752B" },
-  { id: "groupe", name: "Immobilier Abidjan", initials: "IA", preview: "Yao : Bonjour à tous, des nouvelles du projet ?", time: "09:18", unread: 5, color: "#0B6E8A" },
-  { id: "kader", name: "Kader Traoré", initials: "KT", preview: "Merci pour votre retour, c’est noté.", time: "Hier", unread: 0, color: "#1D8A5B" },
-];
 
 const BusinessContext = createContext<BusinessContextValue | undefined>(undefined);
 
+function assetUrl(value?: string | null) {
+  if (!value) return undefined;
+  if (/^https?:\/\//.test(value) || value.startsWith("data:")) return value;
+  return `${getApiBaseUrl()}${value}`;
+}
+
+function initials(name: string) {
+  return name.split(/\s+/).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join("") || "BI";
+}
+
+function relativeTime(value: Date | string) {
+  const date = new Date(value);
+  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60_000));
+  if (minutes < 1) return "À l’instant";
+  if (minutes < 60) return `Il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Il y a ${hours} h`;
+  return `Il y a ${Math.floor(hours / 24)} j`;
+}
+
 export function BusinessProvider({ children }: { children: ReactNode }) {
-  const [posts, setPosts] = useState(initialPosts);
-  const [profile, setProfile] = useState(initialProfile);
-  const [conversations, setConversations] = useState(initialConversations);
-  const [hydrated, setHydrated] = useState(false);
+  const auth = useAuth();
+  const utils = trpc.useUtils();
+  const enabled = auth.isAuthenticated;
+  const profileQuery = trpc.profile.mine.useQuery(undefined, { enabled });
+  const feedQuery = trpc.feed.list.useQuery(undefined, { enabled });
+  const conversationQuery = trpc.conversations.list.useQuery(undefined, { enabled });
+  const notificationQuery = trpc.notifications.list.useQuery(undefined, { enabled });
+  const publishMutation = trpc.feed.create.useMutation();
+  const reactionMutation = trpc.feed.react.useMutation();
+  const selfieMutation = trpc.profile.captureSelfie.useMutation();
+  const coverMutation = trpc.profile.setCover.useMutation();
+  const profileMutation = trpc.profile.update.useMutation();
+  const messageMutation = trpc.conversations.send.useMutation();
+  const readMutation = trpc.notifications.markRead.useMutation();
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const state = JSON.parse(raw) as Partial<{ posts: FeedPost[]; profile: Profile; conversations: Conversation[] }>;
-          if (state.posts) setPosts(state.posts);
-          if (state.profile) setProfile(state.profile);
-          if (state.conversations) setConversations(state.conversations);
-        }
-      } finally {
-        setHydrated(true);
-      }
-    })();
-  }, []);
+  const profile = useMemo<Profile>(() => {
+    const data = profileQuery.data;
+    if (!data) return {
+      name: "",
+      category: "Immobilier & Entrepreneuriat",
+      location: "Abidjan, Côte d’Ivoire",
+      followers: 0,
+      bio: "",
+      identityStatus: "pending",
+      locked: false,
+    };
+    return {
+      name: data.profile.displayName,
+      category: data.profile.category,
+      location: data.profile.location,
+      followers: data.followerCount,
+      bio: data.profile.bio ?? "",
+      selfieUri: assetUrl(data.profile.selfieUrl),
+      coverUri: assetUrl(data.profile.coverUrl),
+      identityStatus: data.profile.identityStatus,
+      phone: data.profile.phone ?? undefined,
+      contactEmail: data.profile.contactEmail ?? undefined,
+      locked: data.profile.profileLocked,
+    };
+  }, [profileQuery.data]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    void AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ posts, profile, conversations }));
-  }, [conversations, hydrated, posts, profile]);
+  const posts = useMemo<FeedPost[]>(() => (feedQuery.data ?? []).map((post) => ({
+    id: post.id,
+    author: post.author.displayName,
+    role: post.author.category,
+    place: post.author.location,
+    avatar: initials(post.author.displayName),
+    publishedAt: relativeTime(post.createdAt),
+    text: post.body,
+    image: assetUrl(post.mediaUrl),
+    reactions: post.reactions,
+    comments: post.comments,
+    reacted: post.reacted,
+    tag: post.category,
+    mediaType: post.type,
+  })), [feedQuery.data]);
+
+  const conversations = useMemo<Conversation[]>(() => (conversationQuery.data ?? []).map((conversation, index) => {
+    const counterpart = conversation.members.find((member) => member.userId !== auth.user?.id) ?? conversation.members[0];
+    const name = conversation.title || counterpart?.displayName || "Conversation";
+    return {
+      id: conversation.id,
+      name,
+      initials: initials(name),
+      preview: conversation.latestMessage?.body ?? "Aucun message pour le moment.",
+      time: conversation.latestMessage ? relativeTime(conversation.latestMessage.createdAt) : "",
+      unread: 0,
+      color: ["#0B6E8A", "#E8752B", "#1D8A5B", "#805AD5"][index % 4],
+    };
+  }), [auth.user?.id, conversationQuery.data]);
+
+  const refreshAll = async () => {
+    await Promise.all([
+      utils.profile.mine.invalidate(),
+      utils.feed.list.invalidate(),
+      utils.conversations.list.invalidate(),
+      utils.notifications.list.invalidate(),
+      utils.dashboard.mine.invalidate(),
+    ]);
+  };
 
   const value = useMemo<BusinessContextValue>(() => ({
     posts,
     profile,
     conversations,
-    hydrated,
-    publishPost: (text, category) => {
-      const cleanText = text.trim();
-      if (!cleanText) return;
-      setPosts((current) => [
-        {
-          id: `post-${Date.now()}`,
-          author: profile.name,
-          role: "Page professionnelle",
-          place: profile.location,
-          avatar: "BI",
-          publishedAt: "À l’instant",
-          text: cleanText,
-          reactions: 0,
-          comments: 0,
-          reacted: false,
-          tag: category,
-        },
-        ...current,
-      ]);
+    notifications: notificationQuery.data ?? [],
+    authenticated: auth.isAuthenticated,
+    authLoading: auth.loading,
+    loading: profileQuery.isLoading || feedQuery.isLoading || conversationQuery.isLoading || notificationQuery.isLoading,
+    error: [profileQuery.error, feedQuery.error, conversationQuery.error, notificationQuery.error].find(Boolean)?.message ?? null,
+    currentUserId: auth.user?.id,
+    refreshAll,
+    publishPost: async (text, category, mediaImage) => {
+      await publishMutation.mutateAsync({ body: text, category, type: mediaImage ? "photo" : "text", mediaImage });
+      await utils.feed.list.invalidate();
+      await utils.dashboard.mine.invalidate();
     },
-    toggleReaction: (id) => {
-      setPosts((current) => current.map((post) => {
-        if (post.id !== id) return post;
-        return { ...post, reacted: !post.reacted, reactions: post.reactions + (post.reacted ? -1 : 1) };
-      }));
+    toggleReaction: async (id) => {
+      await reactionMutation.mutateAsync({ postId: id });
+      await utils.feed.list.invalidate();
     },
-    setSelfieUri: (uri) => setProfile((current) => ({ ...current, selfieUri: uri })),
-    setCoverUri: (uri) => setProfile((current) => ({ ...current, coverUri: uri })),
-    sendMessage: (id, body) => {
-      const cleanBody = body.trim();
-      if (!cleanBody) return;
-      setConversations((current) => current.map((conversation) => (
-        conversation.id === id ? { ...conversation, preview: `Vous : ${cleanBody}`, time: "À l’instant", unread: 0 } : conversation
-      )));
+    setSelfie: async (image) => {
+      await selfieMutation.mutateAsync({ image });
+      await utils.profile.mine.invalidate();
     },
-  }), [conversations, hydrated, posts, profile]);
+    setCover: async (image) => {
+      await coverMutation.mutateAsync({ image });
+      await utils.profile.mine.invalidate();
+    },
+    updateProfile: async (input) => {
+      await profileMutation.mutateAsync({
+        displayName: input.name,
+        bio: input.bio,
+        category: input.category,
+        location: input.location,
+        phone: input.phone,
+        contactEmail: input.contactEmail,
+        profileLocked: input.locked,
+      });
+      await utils.profile.mine.invalidate();
+    },
+    sendMessage: async (id, body) => {
+      await messageMutation.mutateAsync({ conversationId: id, body });
+      await utils.conversations.list.invalidate();
+      await utils.conversations.messages.invalidate({ conversationId: id });
+    },
+    markNotificationRead: async (id) => {
+      await readMutation.mutateAsync({ id });
+      await utils.notifications.list.invalidate();
+    },
+    logout: auth.logout,
+  }), [auth.isAuthenticated, auth.loading, auth.logout, auth.user?.id, conversationQuery.isLoading, conversations, coverMutation, feedQuery.error, feedQuery.isLoading, messageMutation, notificationQuery.data, notificationQuery.error, notificationQuery.isLoading, posts, profile, profileQuery.error, profileQuery.isLoading, profileMutation, publishMutation, reactionMutation, readMutation, selfieMutation, utils]);
 
   return <BusinessContext.Provider value={value}>{children}</BusinessContext.Provider>;
 }
@@ -186,3 +229,5 @@ export function useBusiness() {
   if (!context) throw new Error("useBusiness doit être utilisé dans BusinessProvider");
   return context;
 }
+
+export { assetUrl, relativeTime };

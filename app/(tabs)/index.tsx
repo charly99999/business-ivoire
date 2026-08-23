@@ -1,10 +1,12 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { ActionIcon, Avatar, Card, SectionTitle, Tag } from "@/components/business-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { useBusiness, type FeedPost } from "@/lib/business-context";
+import { trpc } from "@/lib/trpc";
 
 const stories = [
   { id: "your", label: "Votre story", initials: "BI", color: "#0B6E8A", mine: true },
@@ -37,7 +39,17 @@ function StoryStrip() {
 
 function FeedCard({ post }: { post: FeedPost }) {
   const { toggleReaction } = useBusiness();
+  const utils = trpc.useUtils();
+  const [showComments, setShowComments] = useState(false);
+  const [draftComment, setDraftComment] = useState("");
+  const commentsQuery = trpc.feed.comments.useQuery({ postId: post.id }, { enabled: showComments });
+  const commentMutation = trpc.feed.comment.useMutation({ onSuccess: async () => { setDraftComment(""); await Promise.all([utils.feed.comments.invalidate({ postId: post.id }), utils.feed.list.invalidate()]); } });
   const tint = post.tag === "Immobilier" ? "blue" : post.tag === "Entrepreneuriat" ? "orange" : "green";
+  const sendComment = async () => {
+    const body = draftComment.trim();
+    if (!body) return;
+    await commentMutation.mutateAsync({ postId: post.id, body });
+  };
   return (
     <Card style={styles.postCard}>
       <View style={styles.postHeader}>
@@ -58,9 +70,10 @@ function FeedCard({ post }: { post: FeedPost }) {
       </View>
       <View style={styles.postActions}>
         <TouchableOpacity activeOpacity={0.7} onPress={() => toggleReaction(post.id)} style={styles.postAction}><MaterialIcons name={post.reacted ? "thumb-up" : "thumb-up-off-alt"} size={20} color={post.reacted ? "#0B6E8A" : "#667085"} /><Text style={[styles.postActionText, post.reacted && styles.activeAction]}>J’aime</Text></TouchableOpacity>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/notifications" as never)} style={styles.postAction}><MaterialIcons name="chat-bubble-outline" size={20} color="#667085" /><Text style={styles.postActionText}>Commenter</Text></TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.7} onPress={() => setShowComments((visible) => !visible)} style={styles.postAction}><MaterialIcons name="chat-bubble-outline" size={20} color="#667085" /><Text style={styles.postActionText}>Commenter</Text></TouchableOpacity>
         <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/messages" as never)} style={styles.postAction}><MaterialIcons name="send" size={20} color="#667085" /><Text style={styles.postActionText}>Partager</Text></TouchableOpacity>
       </View>
+      {showComments ? <View style={styles.commentsPanel}><Text style={styles.commentsHeading}>Commentaires</Text>{(commentsQuery.data ?? []).slice(0, 4).map((comment) => <View key={comment.id} style={styles.comment}><Avatar initials={comment.author.displayName.slice(0, 2).toUpperCase()} size="sm" color="#E8752B" /><View style={styles.commentBubble}><Text style={styles.commentAuthor}>{comment.author.displayName}</Text><Text style={styles.commentBody}>{comment.body}</Text></View></View>)}{commentsQuery.data?.length === 0 ? <Text style={styles.noComments}>Soyez la première personne à répondre.</Text> : null}<View style={styles.commentComposer}><TextInput value={draftComment} onChangeText={setDraftComment} placeholder="Écrire un commentaire…" placeholderTextColor="#98A2B3" returnKeyType="send" onSubmitEditing={() => void sendComment()} style={styles.commentInput} /><TouchableOpacity accessibilityLabel="Envoyer le commentaire" onPress={() => void sendComment()} activeOpacity={0.72} style={styles.commentSend}><MaterialIcons name="send" size={17} color="#FFFFFF" /></TouchableOpacity></View></View> : null}
     </Card>
   );
 }
@@ -71,7 +84,7 @@ export default function HomeScreen() {
     <ScreenContainer style={styles.screen}>
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => <FeedCard post={item} />}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -135,4 +148,14 @@ const styles = StyleSheet.create({
   postAction: { alignItems: "center", flexDirection: "row", gap: 6, minHeight: 28 },
   postActionText: { color: "#667085", fontSize: 12, fontWeight: "700" },
   activeAction: { color: "#0B6E8A" },
+  commentsPanel: { borderTopColor: "#EEECE6", borderTopWidth: 1, gap: 9, padding: 13 },
+  commentsHeading: { color: "#475467", fontSize: 12, fontWeight: "900", textTransform: "uppercase" },
+  comment: { alignItems: "flex-start", flexDirection: "row", gap: 8 },
+  commentBubble: { backgroundColor: "#F2F1EC", borderRadius: 12, flex: 1, paddingHorizontal: 10, paddingVertical: 8 },
+  commentAuthor: { color: "#16202A", fontSize: 12, fontWeight: "900" },
+  commentBody: { color: "#475467", fontSize: 13, lineHeight: 18, marginTop: 2 },
+  noComments: { color: "#7A858F", fontSize: 12, fontStyle: "italic" },
+  commentComposer: { alignItems: "center", flexDirection: "row", gap: 7, marginTop: 3 },
+  commentInput: { backgroundColor: "#F2F1EC", borderRadius: 18, color: "#16202A", flex: 1, fontSize: 13, minHeight: 38, paddingHorizontal: 11 },
+  commentSend: { alignItems: "center", backgroundColor: "#0B6E8A", borderRadius: 17, height: 34, justifyContent: "center", width: 34 },
 });

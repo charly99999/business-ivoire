@@ -4,6 +4,7 @@ import { Platform, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BusinessProvider } from "@/lib/business-context";
+import { AuthGate } from "@/components/auth-gate";
 
 const ICONS = {
   index: "home-filled",
@@ -19,6 +20,7 @@ export default function TabLayout() {
 
   return (
     <BusinessProvider>
+      <AuthGate>
       <Tabs
         screenOptions={({ route }) => ({
           headerShown: false,
@@ -35,6 +37,7 @@ export default function TabLayout() {
         <Tabs.Screen name="messages" options={{ title: "Messages" }} />
         <Tabs.Screen name="profile" options={{ title: "Profil" }} />
       </Tabs>
+      </AuthGate>
     </BusinessProvider>
   );
 }

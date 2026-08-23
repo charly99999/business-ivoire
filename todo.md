@@ -13,3 +13,10 @@
 - [x] Construire les réglages de confidentialité et les écrans de profil.
 - [x] Ajouter une documentation d’architecture, de sécurité et des limites de production.
 - [x] Tester la navigation, les interactions et la compilation TypeScript.
+- [x] Diagnostiquer et rétablir l’accessibilité de la prévisualisation mobile.
+- [x] Auditer les écarts entre la démonstration locale et les exigences métier de Business Ivoire.
+- [x] Concevoir et mettre en œuvre les données persistantes pour les profils, Pages, publications, réactions, commentaires et conversations.
+- [x] Mettre en œuvre un parcours d’accès utilisateur réellement connecté, avec une gestion de session sécurisée.
+- [x] Remplacer la persistance locale du selfie par un téléversement protégé et un contrôle serveur.
+- [x] Connecter le fil, la publication, les interactions, la messagerie et le tableau de bord à des données réellement persistantes.
+- [x] Ajouter des contrôles de validation, d’autorisation, de limitation de débit et des tests de parcours.

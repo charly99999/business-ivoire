@@ -6,16 +6,24 @@ import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } fr
 import { Avatar, Card, Tag } from "@/components/business-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { useBusiness } from "@/lib/business-context";
+import { imageUriToDataUri } from "@/lib/media";
 
 const COVER_FALLBACK = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80";
 
 export default function ProfileScreen() {
-  const { profile, posts, setCoverUri } = useBusiness();
+  const { profile, posts, setCover } = useBusiness();
   const localPosts = posts.filter((post) => post.author === profile.name).slice(0, 2);
 
   const pickCover = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.85 });
-    if (!result.canceled) setCoverUri(result.assets[0].uri);
+    if (!result.canceled) {
+      try {
+        const image = await imageUriToDataUri(result.assets[0].uri, result.assets[0].mimeType ?? undefined);
+        await setCover(image);
+      } catch {
+        Alert.alert("Couverture non enregistrée", "Cette image n’a pas pu être téléversée. Vérifiez votre connexion puis réessayez.");
+      }
+    }
   };
 
   return (

@@ -10,10 +10,11 @@ import { useBusiness } from "@/lib/business-context";
 type Step = "intro" | "camera" | "review";
 
 export default function SelfieScreen() {
-  const { setSelfieUri } = useBusiness();
+  const { setSelfie } = useBusiness();
   const [permission, requestPermission] = useCameraPermissions();
   const [step, setStep] = useState<Step>("intro");
   const [previewUri, setPreviewUri] = useState<string>();
+  const [selfieData, setSelfieData] = useState<string>();
   const [ready, setReady] = useState(false);
   const cameraRef = useRef<CameraView>(null);
 
@@ -25,9 +26,10 @@ export default function SelfieScreen() {
   const takeSelfie = async () => {
     if (!ready || !cameraRef.current) return;
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.78, mirror: true });
-      if (photo?.uri) {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.78, mirror: true, base64: true });
+      if (photo?.uri && photo.base64) {
         setPreviewUri(photo.uri);
+        setSelfieData(`data:image/jpeg;base64,${photo.base64}`);
         setStep("review");
       }
     } catch {
@@ -35,10 +37,14 @@ export default function SelfieScreen() {
     }
   };
 
-  const confirmSelfie = () => {
-    if (!previewUri) return;
-    setSelfieUri(previewUri);
-    Alert.alert("Selfie enregistré", "Votre photo prise en direct est associée à votre profil sur cet appareil.", [{ text: "Continuer", onPress: () => router.back() }]);
+  const confirmSelfie = async () => {
+    if (!selfieData) return;
+    try {
+      await setSelfie(selfieData);
+      Alert.alert("Selfie enregistré", "Votre photo prise en direct est désormais associée à votre profil.", [{ text: "Continuer", onPress: () => router.back() }]);
+    } catch {
+      Alert.alert("Enregistrement impossible", "La photo n’a pas pu être protégée sur le serveur. Vérifiez votre connexion puis réessayez.");
+    }
   };
 
   if (step === "intro") {

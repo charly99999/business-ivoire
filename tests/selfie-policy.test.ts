@@ -7,7 +7,7 @@ describe("règles de médias Business Ivoire", () => {
 
     expect(selfieScreen).toContain('facing="front"');
     expect(selfieScreen).toContain("takePictureAsync");
-    expect(selfieScreen).toContain("setSelfieUri");
+    expect(selfieScreen).toContain("setSelfie");
     expect(selfieScreen).not.toContain("expo-image-picker");
   });
 
@@ -16,6 +16,6 @@ describe("règles de médias Business Ivoire", () => {
 
     expect(profileScreen).toContain("expo-image-picker");
     expect(profileScreen).toContain("launchImageLibraryAsync");
-    expect(profileScreen).toContain("setCoverUri");
+    expect(profileScreen).toContain("setCover");
   });
 });

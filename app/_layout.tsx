@@ -92,6 +92,7 @@ export default function RootLayout() {
             <Stack.Screen name="notifications" />
             <Stack.Screen name="menu" />
             <Stack.Screen name="settings" />
+            <Stack.Screen name="group-create" />
             <Stack.Screen name="conversation/[id]" />
             <Stack.Screen name="oauth/callback" />
           </Stack>

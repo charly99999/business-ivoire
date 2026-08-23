@@ -71,3 +71,10 @@
 - [x] Corriger l’ouverture de la caméra frontale lorsque le bouton selfie est actionné.
 - [x] Expliquer explicitement dans l’aperçu web que le selfie direct nécessite l’application iPhone, sans jamais proposer la galerie.
 - [x] Préparer une version de test iPhone avec selfie direct et indiquer le parcours de publication Google Play sans déployer.
+- [x] Redémarrer le serveur de développement interrompu et vérifier API et aperçu.
+- [x] Rétablir le second arrêt du serveur de développement et confirmer la disponibilité persistante de l’API.
+- [ ] Auditer intégralement la configuration, les journaux, les dépendances et la stabilité des services.
+- [ ] Tester l’accès, le selfie, le profil, la publication, les annonces publiques, les images, les favoris et la messagerie.
+- [ ] Corriger tous les défauts confirmés et ne transmettre une version qu’après validations complètes.
+- [ ] Corriger l’affichage des messages envoyés par un utilisateur dont le profil n’a pas encore été initialisé.
+- [ ] Aligner les dépendances Expo et de navigation sur les versions compatibles recommandées, puis revalider l’application.

@@ -367,6 +367,7 @@ export async function listConversations(userId: number) {
 
 export async function createDirectConversation(userId: number, targetUserId: number) {
   if (userId === targetUserId) throw new Error("Sélectionnez un autre membre.");
+  await Promise.all([ensureProfile(userId), ensureProfile(targetUserId)]);
   const db = requireDb(await getDb());
   const inserted = await db.insert(conversations).values({ kind: "direct" });
   const conversationId = Number(inserted[0].insertId);
@@ -388,6 +389,7 @@ export async function listMessages(userId: number, conversationId: number) {
 }
 
 export async function sendMessage(userId: number, conversationId: number, body: string) {
+  await ensureProfile(userId);
   const db = await assertConversationMember(userId, conversationId);
   const inserted = await db.insert(messages).values({ conversationId, senderId: userId, body });
   await db.update(conversations).set({ updatedAt: new Date() }).where(eq(conversations.id, conversationId));

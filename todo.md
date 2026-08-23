@@ -73,8 +73,10 @@
 - [x] Préparer une version de test iPhone avec selfie direct et indiquer le parcours de publication Google Play sans déployer.
 - [x] Redémarrer le serveur de développement interrompu et vérifier API et aperçu.
 - [x] Rétablir le second arrêt du serveur de développement et confirmer la disponibilité persistante de l’API.
-- [ ] Auditer intégralement la configuration, les journaux, les dépendances et la stabilité des services.
-- [ ] Tester l’accès, le selfie, le profil, la publication, les annonces publiques, les images, les favoris et la messagerie.
-- [ ] Corriger tous les défauts confirmés et ne transmettre une version qu’après validations complètes.
-- [ ] Corriger l’affichage des messages envoyés par un utilisateur dont le profil n’a pas encore été initialisé.
-- [ ] Aligner les dépendances Expo et de navigation sur les versions compatibles recommandées, puis revalider l’application.
+- [x] Auditer intégralement la configuration, les journaux, les dépendances et la stabilité des services.
+- [x] Tester l’accès, le selfie, le profil, la publication, les annonces publiques, les images, les favoris et la messagerie.
+- [x] Corriger tous les défauts confirmés et ne transmettre une version qu’après validations complètes.
+- [x] Corriger l’affichage des messages envoyés par un utilisateur dont le profil n’a pas encore été initialisé.
+- [x] Aligner les dépendances Expo et de navigation sur les versions compatibles recommandées, puis revalider l’application.
+- [x] Supprimer l’avertissement de module ESLint sans perturber les configurations CommonJS du projet.
+- [x] Réactiver et valider le test de déconnexion désormais couvert par l’authentification locale.

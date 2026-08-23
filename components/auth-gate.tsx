@@ -1,42 +1,31 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { ActivityIndicator, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-import { startOAuthLogin } from "@/constants/oauth";
 import { ScreenContainer } from "@/components/screen-container";
+import { getApiBaseUrl } from "@/constants/oauth";
 import { useBusiness } from "@/lib/business-context";
+import * as Auth from "@/lib/_core/auth";
+
+const BANNER = "/manus-storage/business-ivoire-marketplace-banner_0b19a6cb.png";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { authenticated, authLoading, authError, retryAuth } = useBusiness();
-  if (authLoading) {
-    return <ScreenContainer style={styles.loading}><ActivityIndicator color="#0B6E8A" size="large" /><Text style={styles.loadingText}>Vérification de votre session…</Text></ScreenContainer>;
-  }
+  const { authenticated, authLoading, retryAuth } = useBusiness();
+  const [mode, setMode] = useState<"signup" | "signin">("signup");
+  const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [message, setMessage] = useState<string>(); const [busy, setBusy] = useState(false);
+  if (authLoading) return <ScreenContainer style={styles.loading}><ActivityIndicator color="#D5A72C" size="large" /><Text style={styles.loadingText}>Préparation sécurisée…</Text></ScreenContainer>;
   if (authenticated) return <>{children}</>;
-  return (
-    <ScreenContainer edges={["top", "bottom", "left", "right"]} style={styles.screen}>
-      <ImageBackground source={{ uri: "/manus-storage/business-ivoire-marketplace-banner_0b19a6cb.png" }} imageStyle={styles.backgroundImage} style={styles.hero}>
-      <View style={styles.content}>
-        <View style={styles.mark}><MaterialIcons name="business-center" size={35} color="#FFFFFF" /></View>
-        <Text style={styles.eyebrow}>BUSINESS IVOIRE</Text><Text style={styles.title}>Achetez. Vendez. Grandissez.</Text>
-        <Text style={styles.text}>La place de marché ivoirienne pour découvrir des opportunités, présenter votre activité et contacter les bons professionnels.</Text>
-        <View style={styles.rule}><MaterialIcons name="verified-user" size={21} color="#D5A72C" /><Text style={styles.ruleText}>Gratuit, sécurisé et pensé pour les professionnels d’ici.</Text></View>
-      </View>
-      </ImageBackground>
-      {authError ? <View style={styles.retryNotice}><Text style={styles.retryText}>La connexion est temporairement indisponible. Vous pouvez réessayer sans perdre vos informations.</Text><TouchableOpacity onPress={() => void retryAuth()}><Text style={styles.retryAction}>Réessayer</Text></TouchableOpacity></View> : null}
-      <TouchableOpacity style={styles.button} activeOpacity={0.78} onPress={() => void startOAuthLogin()}><Text style={styles.buttonText}>Continuer vers Business Ivoire</Text><MaterialIcons name="arrow-forward" size={20} color="#102015" /></TouchableOpacity>
-    </ScreenContainer>
-  );
+  const submit = async () => {
+    try {
+      setBusy(true); setMessage(undefined);
+      const response = await fetch(`${getApiBaseUrl()}/api/auth/local/${mode === "signup" ? "signup" : "signin"}`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ name, email, password }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Connexion indisponible.");
+      if (result.app_session_id) await Auth.setSessionToken(result.app_session_id);
+      if (result.user) await Auth.setUserInfo({ ...result.user, lastSignedIn: new Date(result.user.lastSignedIn) });
+      await retryAuth();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Connexion indisponible."); } finally { setBusy(false); }
+  };
+  return <ScreenContainer edges={["top", "bottom", "left", "right"]} style={styles.screen}><ImageBackground source={{ uri: BANNER }} imageStyle={styles.backgroundImage} style={styles.hero}><View style={styles.content}><View style={styles.mark}><MaterialIcons name="business-center" size={30} color="#FFFFFF" /></View><Text style={styles.eyebrow}>BUSINESS IVOIRE</Text><Text style={styles.title}>Votre marché commence ici.</Text><Text style={styles.text}>Créez votre compte gratuitement. Aucun navigateur externe, aucune redirection compliquée.</Text><View style={styles.form}><View style={styles.switcher}><TouchableOpacity onPress={() => setMode("signup")} style={[styles.switch, mode === "signup" && styles.switchActive]}><Text style={[styles.switchText, mode === "signup" && styles.switchTextActive]}>Créer un compte</Text></TouchableOpacity><TouchableOpacity onPress={() => setMode("signin")} style={[styles.switch, mode === "signin" && styles.switchActive]}><Text style={[styles.switchText, mode === "signin" && styles.switchTextActive]}>Se connecter</Text></TouchableOpacity></View>{mode === "signup" ? <TextInput value={name} onChangeText={setName} placeholder="Votre nom ou activité" placeholderTextColor="#8D9B8E" style={styles.input} /> : null}<TextInput value={email} onChangeText={setEmail} placeholder="Adresse e-mail" autoCapitalize="none" keyboardType="email-address" placeholderTextColor="#8D9B8E" style={styles.input} /><TextInput value={password} onChangeText={setPassword} placeholder="Mot de passe (10 caractères min.)" secureTextEntry placeholderTextColor="#8D9B8E" style={styles.input} />{message ? <Text style={styles.error}>{message}</Text> : null}<TouchableOpacity disabled={busy} style={[styles.button, busy && styles.disabled]} onPress={() => void submit()}><Text style={styles.buttonText}>{busy ? "Veuillez patienter…" : mode === "signup" ? "Créer mon compte gratuit" : "Accéder à mon compte"}</Text><MaterialIcons name="arrow-forward" size={18} color="#102015" /></TouchableOpacity></View></View></ImageBackground></ScreenContainer>;
 }
-
-const styles = StyleSheet.create({
-  screen: { backgroundColor: "#07150B", padding: 20 }, hero: { borderRadius: 28, flex: 1, overflow: "hidden" }, backgroundImage: { opacity: 0.52 },
-  content: { flex: 1, justifyContent: "center" },
-  mark: { alignItems: "center", backgroundColor: "#176B35", borderColor: "#D5A72C", borderRadius: 25, borderWidth: 1, height: 58, justifyContent: "center", width: 58 }, eyebrow: { color: "#D5A72C", fontSize: 12, fontWeight: "900", letterSpacing: 2, marginTop: 22 },
-  title: { color: "#FFFFFF", fontSize: 34, fontWeight: "900", letterSpacing: -1, lineHeight: 39, marginTop: 9 },
-  text: { color: "#E7E9DF", fontSize: 15, lineHeight: 23, marginTop: 13 },
-  rule: { alignItems: "flex-start", backgroundColor: "rgba(7,21,11,0.74)", borderColor: "rgba(213,167,44,0.6)", borderRadius: 16, borderWidth: 1, flexDirection: "row", gap: 10, marginTop: 22, padding: 14 },
-  ruleText: { color: "#F6F5E8", flex: 1, fontSize: 13, lineHeight: 19 },
-  button: { alignItems: "center", backgroundColor: "#D5A72C", borderRadius: 16, flexDirection: "row", gap: 9, justifyContent: "center", marginTop: 14, minHeight: 54 },
-  buttonText: { color: "#102015", fontSize: 15, fontWeight: "900" }, retryNotice: { alignItems: "center", backgroundColor: "#FFF3D3", borderRadius: 13, flexDirection: "row", gap: 10, justifyContent: "space-between", marginTop: 12, padding: 12 }, retryText: { color: "#704D04", flex: 1, fontSize: 12, lineHeight: 17 }, retryAction: { color: "#176B35", fontSize: 12, fontWeight: "900" },
-  loading: { alignItems: "center", backgroundColor: "#F7F5EF", justifyContent: "center" },
-  loadingText: { color: "#667085", fontSize: 14, fontWeight: "700", marginTop: 14 },
-});
+const styles = StyleSheet.create({ screen: { backgroundColor: "#07150B", padding: 16 }, hero: { borderRadius: 26, flex: 1, overflow: "hidden" }, backgroundImage: { opacity: 0.34 }, content: { backgroundColor: "rgba(7,21,11,0.74)", flex: 1, justifyContent: "center", padding: 20 }, mark: { alignItems: "center", backgroundColor: "#176B35", borderColor: "#D5A72C", borderRadius: 22, borderWidth: 1, height: 48, justifyContent: "center", width: 48 }, eyebrow: { color: "#D5A72C", fontSize: 11, fontWeight: "900", letterSpacing: 1.7, marginTop: 16 }, title: { color: "#FFFFFF", fontSize: 30, fontWeight: "900", letterSpacing: -0.7, lineHeight: 35, marginTop: 7 }, text: { color: "#DCE7DB", fontSize: 13, lineHeight: 19, marginTop: 8 }, form: { backgroundColor: "#F7F4EA", borderRadius: 18, gap: 9, marginTop: 22, padding: 12 }, switcher: { backgroundColor: "#E5E2D4", borderRadius: 11, flexDirection: "row", padding: 3 }, switch: { alignItems: "center", borderRadius: 9, flex: 1, paddingVertical: 9 }, switchActive: { backgroundColor: "#176B35" }, switchText: { color: "#536158", fontSize: 11, fontWeight: "900" }, switchTextActive: { color: "#FFFFFF" }, input: { backgroundColor: "#FFFFFF", borderColor: "#DDD9CA", borderRadius: 11, borderWidth: 1, color: "#102015", fontSize: 13, minHeight: 45, paddingHorizontal: 11 }, error: { color: "#A1342C", fontSize: 12, lineHeight: 16 }, button: { alignItems: "center", backgroundColor: "#D5A72C", borderRadius: 12, flexDirection: "row", gap: 7, justifyContent: "center", minHeight: 48 }, disabled: { opacity: 0.65 }, buttonText: { color: "#102015", fontSize: 13, fontWeight: "900" }, loading: { alignItems: "center", backgroundColor: "#07150B", justifyContent: "center" }, loadingText: { color: "#DCE7DB", fontSize: 14, fontWeight: "700", marginTop: 12 } });

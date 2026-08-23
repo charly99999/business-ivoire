@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
 
 import {
@@ -8,6 +9,7 @@ import {
   conversations,
   follows,
   groupMembers,
+  localAccounts,
   messages,
   notifications,
   postReactions,
@@ -75,6 +77,27 @@ export async function getUserByOpenId(openId: string) {
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result[0];
+}
+
+export async function getUserById(id: number) {
+  const db = requireDb(await getDb());
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getLocalAccountByEmail(email: string) {
+  const db = requireDb(await getDb());
+  const result = await db.select().from(localAccounts).where(eq(localAccounts.email, email)).limit(1);
+  return result[0];
+}
+
+export async function createLocalAccount(input: { email: string; name: string; passwordHash: string; passwordSalt: string }) {
+  const db = requireDb(await getDb());
+  const openId = `local_${randomUUID()}`;
+  const inserted = await db.insert(users).values({ openId, name: input.name, email: input.email, loginMethod: "email" });
+  const userId = Number(inserted[0].insertId);
+  await db.insert(localAccounts).values({ userId, email: input.email, passwordHash: input.passwordHash, passwordSalt: input.passwordSalt });
+  return getUserById(userId);
 }
 
 export async function ensureProfile(userId: number, displayName?: string | null) {

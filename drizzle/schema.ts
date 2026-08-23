@@ -22,6 +22,20 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
+export const localAccounts = mysqlTable(
+  "local_accounts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    email: varchar("email", { length: 320 }).notNull(),
+    passwordHash: varchar("passwordHash", { length: 128 }).notNull(),
+    passwordSalt: varchar("passwordSalt", { length: 64 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => [uniqueIndex("local_accounts_user_unique").on(table.userId), uniqueIndex("local_accounts_email_unique").on(table.email)],
+);
+
 export const profiles = mysqlTable(
   "profiles",
   {

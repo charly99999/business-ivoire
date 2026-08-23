@@ -1,7 +1,10 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
-import type { Express, Request, Response } from "express";
+import { type Express, type Request, type Response } from "express";
+import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
 import { getUserByOpenId, upsertUser } from "../db";
 import { getSessionCookieOptions } from "./cookies";
+import * as db from "../db";
 import { sdk } from "./sdk";
 
 function getQueryParam(req: Request, key: string): string | undefined {
@@ -62,6 +65,34 @@ function buildUserResponse(
 }
 
 export function registerOAuthRoutes(app: Express) {
+  const scrypt = promisify(scryptCallback);
+  const issueLocalSession = async (req: Request, res: Response, user: { openId: string; name: string | null; email: string | null; id: number }) => {
+    const sessionToken = await sdk.createSessionToken(user.openId, { name: user.name || "Membre Business Ivoire", expiresInMs: ONE_YEAR_MS });
+    res.cookie(COOKIE_NAME, sessionToken, { ...getSessionCookieOptions(req), maxAge: ONE_YEAR_MS });
+    res.json({ app_session_id: sessionToken, user: buildUserResponse(user) });
+  };
+  app.post("/api/auth/local/signup", async (req: Request, res: Response) => {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    if (!/^\S+@\S+\.\S+$/.test(email) || name.length < 2 || password.length < 10) return res.status(400).json({ error: "Utilisez un nom, un e-mail valide et un mot de passe de 10 caractères minimum." });
+    if (await db.getLocalAccountByEmail(email)) return res.status(409).json({ error: "Un compte existe déjà avec cet e-mail." });
+    const passwordSalt = randomBytes(16).toString("hex");
+    const passwordHash = (await scrypt(password, passwordSalt, 64) as Buffer).toString("hex");
+    const user = await db.createLocalAccount({ email, name, passwordHash, passwordSalt });
+    await issueLocalSession(req, res, user);
+  });
+  app.post("/api/auth/local/signin", async (req: Request, res: Response) => {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    const account = await db.getLocalAccountByEmail(email);
+    if (!account) return res.status(401).json({ error: "E-mail ou mot de passe incorrect." });
+    const attempted = (await scrypt(password, account.passwordSalt, 64) as Buffer).toString("hex");
+    if (!timingSafeEqual(Buffer.from(attempted, "hex"), Buffer.from(account.passwordHash, "hex"))) return res.status(401).json({ error: "E-mail ou mot de passe incorrect." });
+    const user = await db.getUserById(account.userId);
+    if (!user) return res.status(500).json({ error: "Compte introuvable." });
+    await issueLocalSession(req, res, user);
+  });
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");

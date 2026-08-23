@@ -38,6 +38,7 @@
 - [x] Réparer le choix, l’ajout, la suppression et l’affichage de plusieurs photos d’annonce.
 - [x] Revoir les profils et paramètres afin de n’afficher que des informations exactes et éditables.
 - [x] Valider les parcours critiques avant toute nouvelle livraison.
+- [x] Corriger le menu rendu hors du fournisseur d’état et valider les écrans dépendants.
 - [x] Recentrer l’application sur les annonces, recherche, favoris et messagerie acheteur-vendeur avant les fonctions sociales.
 - [x] Couvrir toutes les catégories d’annonces via une taxonomie et des filtres extensibles.
 - [x] Rendre le prix en FCFA obligatoire dans le formulaire, les API et l’affichage de chaque annonce.

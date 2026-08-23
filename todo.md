@@ -116,4 +116,4 @@
 - [ ] Corriger le bouton Confirmer du selfie afin qu’il téléverse réellement l’image et appelle la fonction Supabase.
 - [ ] Vérifier une trace Supabase réelle pour le bucket identity-selfies et la fonction capture-selfie après correction.
 - [ ] Publier le code Business Ivoire dans un dépôt GitHub privé connecté, sans secrets ni fichiers locaux sensibles.
-- [ ] Pousser le code source complet assaini vers charly99999/business-ivoire sur la branche main, sur instruction explicite du propriétaire.
+- [x] Pousser le code source complet assaini vers charly99999/business-ivoire sur la branche main, sur instruction explicite du propriétaire.

@@ -8,6 +8,13 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useBusiness } from "@/lib/business-context";
 
 type Step = "intro" | "camera" | "review" | "error";
+type CapturedPhoto = { uri?: string; base64?: string };
+
+function normalizeSelfieDataUri(photo: CapturedPhoto) {
+  const encoded = photo.base64 ?? "";
+  if (!encoded) throw new Error("capture_incomplete");
+  return encoded.startsWith("data:image/") ? encoded : `data:image/jpeg;base64,${encoded}`;
+}
 
 export default function SelfieScreen() {
   const { setSelfie, profile } = useBusiness();
@@ -63,10 +70,12 @@ export default function SelfieScreen() {
     if (!ready || !cameraRef.current || busy) return;
     try {
       setBusy(true);
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.76, mirror: true, base64: true, skipProcessing: false });
-      if (!photo?.uri || !photo.base64) throw new Error("capture_incomplete");
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.76, base64: true, skipProcessing: false });
+      if (!photo?.uri) throw new Error("capture_incomplete");
+      const dataUri = normalizeSelfieDataUri(photo);
       setPreviewUri(photo.uri);
-      setSelfieData(`data:image/jpeg;base64,${photo.base64}`);
+      setSelfieData(dataUri);
+      console.info("[selfie] direct camera capture completed", { platform: Platform.OS, format: dataUri.slice(0, 32) });
       setStep("review");
     } catch {
       Alert.alert("Capture indisponible", "La photo n’a pas pu être prise. Vérifiez la caméra frontale puis réessayez.");

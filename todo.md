@@ -20,3 +20,8 @@
 - [x] Remplacer la persistance locale du selfie par un téléversement protégé et un contrôle serveur.
 - [x] Connecter le fil, la publication, les interactions, la messagerie et le tableau de bord à des données réellement persistantes.
 - [x] Ajouter des contrôles de validation, d’autorisation, de limitation de débit et des tests de parcours.
+- [x] Auditer et corriger les erreurs visibles, y compris les redirections de session et les écrans instables.
+- [x] Définir une identité visuelle vert profond, or et ivoire inspirée de la référence fournie.
+- [x] Refondre l’accueil, les catégories, les annonces et la navigation avec une ergonomie de marketplace mobile.
+- [x] Adapter les composants aux longues listes, aux états vides, aux chargements et aux erreurs récupérables.
+- [x] Documenter les mesures nécessaires pour une exploitation à très grande échelle.

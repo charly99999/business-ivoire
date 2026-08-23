@@ -51,6 +51,7 @@ type BusinessContextValue = {
   notifications: Array<{ id: number; message: string; createdAt: Date; readAt: Date | null; actor: { displayName: string } | null; kind: string }>;
   authenticated: boolean;
   authLoading: boolean;
+  authError: string | null;
   loading: boolean;
   error: string | null;
   currentUserId?: number;
@@ -63,6 +64,7 @@ type BusinessContextValue = {
   sendMessage: (id: number, body: string) => Promise<void>;
   markNotificationRead: (id: number) => Promise<void>;
   logout: () => Promise<void>;
+  retryAuth: () => Promise<void>;
 };
 
 const BusinessContext = createContext<BusinessContextValue | undefined>(undefined);
@@ -176,6 +178,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     notifications: notificationQuery.data ?? [],
     authenticated: auth.isAuthenticated,
     authLoading: auth.loading,
+    authError: auth.error?.message ?? null,
     loading: profileQuery.isLoading || feedQuery.isLoading || conversationQuery.isLoading || notificationQuery.isLoading,
     error: [profileQuery.error, feedQuery.error, conversationQuery.error, notificationQuery.error].find(Boolean)?.message ?? null,
     currentUserId: auth.user?.id,
@@ -219,7 +222,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       await utils.notifications.list.invalidate();
     },
     logout: auth.logout,
-  }), [auth.isAuthenticated, auth.loading, auth.logout, auth.user?.id, conversationQuery.isLoading, conversations, coverMutation, feedQuery.error, feedQuery.isLoading, messageMutation, notificationQuery.data, notificationQuery.error, notificationQuery.isLoading, posts, profile, profileQuery.error, profileQuery.isLoading, profileMutation, publishMutation, reactionMutation, readMutation, selfieMutation, utils]);
+    retryAuth: auth.refresh,
+  }), [auth.error?.message, auth.isAuthenticated, auth.loading, auth.logout, auth.refresh, auth.user?.id, conversationQuery.isLoading, conversations, coverMutation, feedQuery.error, feedQuery.isLoading, messageMutation, notificationQuery.data, notificationQuery.error, notificationQuery.isLoading, posts, profile, profileQuery.error, profileQuery.isLoading, profileMutation, publishMutation, reactionMutation, readMutation, selfieMutation, utils]);
 
   return <BusinessContext.Provider value={value}>{children}</BusinessContext.Provider>;
 }

@@ -24,8 +24,8 @@ export default function TabLayout() {
       <Tabs
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarActiveTintColor: "#0B6E8A",
-          tabBarInactiveTintColor: "#7A858F",
+          tabBarActiveTintColor: "#D5A72C",
+          tabBarInactiveTintColor: "#AAB6A9",
           tabBarLabelStyle: styles.label,
           tabBarStyle: [styles.tabBar, { height: 58 + paddingBottom, paddingBottom }],
           tabBarIcon: ({ color, size }) => <MaterialIcons name={ICONS[route.name as keyof typeof ICONS]} size={size} color={color} />,
@@ -44,5 +44,5 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   label: { fontSize: 11, fontWeight: "700", marginTop: 2 },
-  tabBar: { backgroundColor: "#FFFFFF", borderTopColor: "#E7E5DE", borderTopWidth: 1, paddingTop: 7 },
+  tabBar: { backgroundColor: "#07150B", borderTopColor: "#24462B", borderTopWidth: 1, paddingTop: 7 },
 });

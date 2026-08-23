@@ -11,6 +11,12 @@ import { storagePut } from "./storage";
 const recentWrites = new Map<string, number[]>();
 
 function enforceRateLimit(userId: number, action: string, limit: number, windowMs: number) {
+  if (recentWrites.size > 10_000) {
+    const cutoff = Date.now() - windowMs;
+    for (const [storedKey, timestamps] of recentWrites) {
+      if (!timestamps.some((timestamp) => timestamp >= cutoff)) recentWrites.delete(storedKey);
+    }
+  }
   const key = `${userId}:${action}`;
   const now = Date.now();
   const kept = (recentWrites.get(key) ?? []).filter((timestamp) => now - timestamp < windowMs);

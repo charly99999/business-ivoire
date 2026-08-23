@@ -1,161 +1,37 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
-import { useState } from "react";
-import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useMemo, useState } from "react";
+import { FlatList, Image, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-import { ActionIcon, Avatar, Card, SectionTitle, Tag } from "@/components/business-ui";
+import { Avatar, Card } from "@/components/business-ui";
 import { ScreenContainer } from "@/components/screen-container";
-import { useBusiness, type FeedPost } from "@/lib/business-context";
+import { type FeedPost, useBusiness } from "@/lib/business-context";
 import { trpc } from "@/lib/trpc";
 
-const stories = [
-  { id: "your", label: "Votre story", initials: "BI", color: "#0B6E8A", mine: true },
-  { id: "aicha", label: "Aïcha", initials: "AK", color: "#E8752B" },
-  { id: "kader", label: "Kader", initials: "KT", color: "#1D8A5B" },
-  { id: "maeva", label: "Maeva", initials: "MN", color: "#805AD5" },
-  { id: "yao", label: "Yao", initials: "YD", color: "#C05621" },
-];
-
-function StoryStrip() {
-  return (
-    <FlatList
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.storyList}
-      data={stories}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <TouchableOpacity activeOpacity={0.76} style={styles.story} onPress={() => router.push("/profile" as never)}>
-          <View style={[styles.storyRing, { borderColor: item.color }]}>
-            <Avatar initials={item.initials} size="md" color={item.color} />
-            {item.mine ? <View style={styles.storyAdd}><MaterialIcons name="add" size={14} color="#FFFFFF" /></View> : null}
-          </View>
-          <Text numberOfLines={1} style={styles.storyName}>{item.label}</Text>
-        </TouchableOpacity>
-      )}
-    />
-  );
-}
-
-function FeedCard({ post }: { post: FeedPost }) {
-  const { toggleReaction } = useBusiness();
-  const utils = trpc.useUtils();
-  const [showComments, setShowComments] = useState(false);
-  const [draftComment, setDraftComment] = useState("");
-  const commentsQuery = trpc.feed.comments.useQuery({ postId: post.id }, { enabled: showComments });
-  const commentMutation = trpc.feed.comment.useMutation({ onSuccess: async () => { setDraftComment(""); await Promise.all([utils.feed.comments.invalidate({ postId: post.id }), utils.feed.list.invalidate()]); } });
-  const tint = post.tag === "Immobilier" ? "blue" : post.tag === "Entrepreneuriat" ? "orange" : "green";
-  const sendComment = async () => {
-    const body = draftComment.trim();
-    if (!body) return;
-    await commentMutation.mutateAsync({ postId: post.id, body });
-  };
-  return (
-    <Card style={styles.postCard}>
-      <View style={styles.postHeader}>
-        <Avatar initials={post.avatar} color={post.tag === "Immobilier" ? "#0B6E8A" : "#E8752B"} />
-        <View style={styles.postIdentity}>
-          <Text style={styles.postAuthor}>{post.author}</Text>
-          <Text style={styles.postMeta}>{post.role} · {post.publishedAt}</Text>
-          <Text style={styles.postLocation}>{post.place}</Text>
-        </View>
-        <MaterialIcons name="more-horiz" size={24} color="#667085" />
-      </View>
-      <View style={styles.tagWrap}><Tag label={post.tag} tint={tint} /></View>
-      <Text style={styles.postText}>{post.text}</Text>
-      {post.image ? <Image source={{ uri: post.image }} style={styles.postImage} accessibilityLabel="Illustration de la publication" /> : null}
-      <View style={styles.engagementInfo}>
-        <View style={styles.reactionCluster}><View style={styles.smallReaction}><MaterialIcons name="thumb-up" size={11} color="#FFFFFF" /></View><Text style={styles.engagementText}>{post.reactions}</Text></View>
-        <Text style={styles.engagementText}>{post.comments} commentaires</Text>
-      </View>
-      <View style={styles.postActions}>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => toggleReaction(post.id)} style={styles.postAction}><MaterialIcons name={post.reacted ? "thumb-up" : "thumb-up-off-alt"} size={20} color={post.reacted ? "#0B6E8A" : "#667085"} /><Text style={[styles.postActionText, post.reacted && styles.activeAction]}>J’aime</Text></TouchableOpacity>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => setShowComments((visible) => !visible)} style={styles.postAction}><MaterialIcons name="chat-bubble-outline" size={20} color="#667085" /><Text style={styles.postActionText}>Commenter</Text></TouchableOpacity>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/messages" as never)} style={styles.postAction}><MaterialIcons name="send" size={20} color="#667085" /><Text style={styles.postActionText}>Partager</Text></TouchableOpacity>
-      </View>
-      {showComments ? <View style={styles.commentsPanel}><Text style={styles.commentsHeading}>Commentaires</Text>{(commentsQuery.data ?? []).slice(0, 4).map((comment) => <View key={comment.id} style={styles.comment}><Avatar initials={comment.author.displayName.slice(0, 2).toUpperCase()} size="sm" color="#E8752B" /><View style={styles.commentBubble}><Text style={styles.commentAuthor}>{comment.author.displayName}</Text><Text style={styles.commentBody}>{comment.body}</Text></View></View>)}{commentsQuery.data?.length === 0 ? <Text style={styles.noComments}>Soyez la première personne à répondre.</Text> : null}<View style={styles.commentComposer}><TextInput value={draftComment} onChangeText={setDraftComment} placeholder="Écrire un commentaire…" placeholderTextColor="#98A2B3" returnKeyType="send" onSubmitEditing={() => void sendComment()} style={styles.commentInput} /><TouchableOpacity accessibilityLabel="Envoyer le commentaire" onPress={() => void sendComment()} activeOpacity={0.72} style={styles.commentSend}><MaterialIcons name="send" size={17} color="#FFFFFF" /></TouchableOpacity></View></View> : null}
-    </Card>
-  );
-}
+const BANNER = "/manus-storage/business-ivoire-marketplace-banner_0b19a6cb.png";
+const categories = [
+  ["Immobilier", "home-work", "#D5A72C"], ["Véhicules", "directions-car", "#F4EEE0"], ["Emploi", "work", "#66C276"], ["Services", "handyman", "#F4EEE0"], ["Mode", "checkroom", "#D5A72C"], ["Agriculture", "agriculture", "#66C276"],
+] as const;
 
 export default function HomeScreen() {
   const { posts, profile } = useBusiness();
-  return (
-    <ScreenContainer style={styles.screen}>
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <FeedCard post={item} />}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View>
-            <View style={styles.topBar}>
-              <View><Text style={styles.brand}>Business <Text style={styles.brandAccent}>Ivoire</Text></Text><Text style={styles.location}>Abidjan · Opportunités locales</Text></View>
-              <View style={styles.topActions}><ActionIcon icon="search" label="Rechercher" onPress={() => router.push("/discover" as never)} /><ActionIcon icon="notifications-none" label="Notifications" badge={3} onPress={() => router.push("/notifications" as never)} /></View>
-            </View>
-            <StoryStrip />
-            <Card style={styles.composer}>
-              <TouchableOpacity activeOpacity={0.72} onPress={() => router.push("/profile" as never)}><Avatar initials="BI" uri={profile.selfieUri} color="#0B6E8A" /></TouchableOpacity>
-              <TouchableOpacity activeOpacity={0.74} onPress={() => router.push("/create" as never)} style={styles.composerField}><Text style={styles.composerText}>Partagez une opportunité…</Text></TouchableOpacity>
-            </Card>
-            <View style={styles.quickActions}>
-              <TouchableOpacity style={styles.quickAction} activeOpacity={0.7} onPress={() => router.push("/create" as never)}><MaterialIcons name="image" size={20} color="#1D8A5B" /><Text style={styles.quickText}>Photo</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.quickAction} activeOpacity={0.7} onPress={() => router.push("/create" as never)}><MaterialIcons name="play-circle-outline" size={20} color="#E8752B" /><Text style={styles.quickText}>Reel</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.quickAction} activeOpacity={0.7} onPress={() => router.push("/profile" as never)}><MaterialIcons name="add-circle-outline" size={20} color="#0B6E8A" /><Text style={styles.quickText}>Story</Text></TouchableOpacity>
-            </View>
-            <SectionTitle title="À la une" action="Voir les groupes" onPress={() => router.push("/discover" as never)} />
-          </View>
-        }
-      />
-    </ScreenContainer>
-  );
+  const [query, setQuery] = useState("");
+  const filteredPosts = useMemo(() => posts.filter((post) => `${post.text} ${post.author} ${post.tag}`.toLowerCase().includes(query.toLowerCase())), [posts, query]);
+
+  return <ScreenContainer style={styles.screen}><FlatList data={filteredPosts} keyExtractor={(item) => String(item.id)} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} renderItem={({ item }) => <ListingCard post={item} />} ListEmptyComponent={<EmptyState query={query} />} ListHeaderComponent={<View><View style={styles.topBar}><View><Text style={styles.wordmark}>BUSINESS <Text style={styles.wordmarkLight}>IVOIRE</Text></Text><Text style={styles.subtitle}>La place de marché qui avance</Text></View><TouchableOpacity activeOpacity={0.72} onPress={() => router.push("/notifications" as never)} style={styles.notification}><MaterialIcons name="notifications-none" size={23} color="#F7F4EA" /></TouchableOpacity></View><View style={styles.search}><MaterialIcons name="search" size={20} color="#56675A" /><TextInput value={query} onChangeText={setQuery} placeholder="Que recherchez-vous aujourd’hui ?" placeholderTextColor="#7A887D" returnKeyType="search" style={styles.searchInput} /><MaterialIcons name="tune" size={19} color="#176B35" /></View><ImageBackground source={{ uri: BANNER }} imageStyle={styles.heroImage} style={styles.hero}><View style={styles.heroShade}><Text style={styles.heroEyebrow}>100 % GRATUIT · CÔTE D’IVOIRE</Text><Text style={styles.heroTitle}>Trouvez tout.{"\n"}<Text style={styles.heroAccent}>En un seul clic.</Text></Text><Text style={styles.heroText}>Découvrez des professionnels, des annonces et des opportunités près de vous.</Text><TouchableOpacity activeOpacity={0.75} onPress={() => router.push("/discover" as never)} style={styles.heroCta}><Text style={styles.heroCtaText}>Explorer les opportunités</Text><MaterialIcons name="arrow-forward" size={18} color="#102015" /></TouchableOpacity></View></ImageBackground><View style={styles.trustRow}><Trust icon="verified-user" label="Sécurisé" /><Trust icon="bolt" label="Rapide" /><Trust icon="groups" label="Communauté" /></View><View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Catégories populaires</Text><TouchableOpacity onPress={() => router.push("/discover" as never)}><Text style={styles.seeAll}>Voir tout</Text></TouchableOpacity></View><View style={styles.categories}>{categories.map(([label, icon, color]) => <TouchableOpacity key={label} activeOpacity={0.72} onPress={() => setQuery(label)} style={styles.category}><View style={[styles.categoryIcon, { backgroundColor: color }]}><MaterialIcons name={icon} size={20} color={color === "#F4EEE0" ? "#176B35" : "#102015"} /></View><Text style={styles.categoryLabel}>{label}</Text></TouchableOpacity>)}</View><View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>Annonces récentes</Text><Text style={styles.sectionHint}>{profile.name ? `Pour ${profile.location}` : "Pour la communauté"}</Text></View><TouchableOpacity onPress={() => router.push("/create" as never)} style={styles.publishMini}><MaterialIcons name="add" size={15} color="#102015" /><Text style={styles.publishMiniText}>Publier</Text></TouchableOpacity></View></View>} /></ScreenContainer>;
 }
 
+function Trust({ icon, label }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; label: string }) { return <View style={styles.trust}><MaterialIcons name={icon} size={18} color="#D5A72C" /><Text style={styles.trustText}>{label}</Text></View>; }
+
+function ListingCard({ post }: { post: FeedPost }) {
+  const { toggleReaction } = useBusiness(); const [open, setOpen] = useState(false); const [draft, setDraft] = useState(""); const utils = trpc.useUtils();
+  const comments = trpc.feed.comments.useQuery({ postId: post.id }, { enabled: open }); const addComment = trpc.feed.comment.useMutation({ onSuccess: async () => { setDraft(""); await Promise.all([utils.feed.comments.invalidate({ postId: post.id }), utils.feed.list.invalidate()]); } });
+  const submit = async () => { const body = draft.trim(); if (body) await addComment.mutateAsync({ postId: post.id, body }); };
+  return <Card style={styles.listing}><View style={styles.listingHeader}><Avatar initials={post.avatar} color="#176B35" /><View style={styles.author}><Text style={styles.authorName}>{post.author}</Text><Text style={styles.authorMeta}>{post.tag} · {post.place}</Text></View><MaterialIcons name="more-horiz" size={22} color="#768479" /></View>{post.image ? <Image source={{ uri: post.image }} style={styles.listingImage} /> : <View style={styles.textArtwork}><MaterialIcons name="business-center" size={37} color="#D5A72C" /></View>}<View style={styles.listingBody}><Text numberOfLines={3} style={styles.listingText}>{post.text}</Text><Text style={styles.listingMeta}>{post.publishedAt} · {post.reactions} intérêt{post.reactions > 1 ? "s" : ""}</Text></View><View style={styles.actions}><TouchableOpacity onPress={() => void toggleReaction(post.id)} activeOpacity={0.72} style={styles.action}><MaterialIcons name={post.reacted ? "favorite" : "favorite-border"} size={19} color={post.reacted ? "#C88511" : "#647067"} /><Text style={styles.actionText}>{post.reacted ? "Intéressé" : "Intéressé"}</Text></TouchableOpacity><TouchableOpacity onPress={() => setOpen((value) => !value)} activeOpacity={0.72} style={styles.action}><MaterialIcons name="chat-bubble-outline" size={18} color="#647067" /><Text style={styles.actionText}>Répondre</Text></TouchableOpacity><TouchableOpacity onPress={() => router.push("/messages" as never)} activeOpacity={0.72} style={styles.action}><MaterialIcons name="send" size={18} color="#647067" /></TouchableOpacity></View>{open ? <View style={styles.comments}>{(comments.data ?? []).slice(0, 3).map((comment) => <Text key={comment.id} style={styles.comment}><Text style={styles.commentAuthor}>{comment.author.displayName} </Text>{comment.body}</Text>)}<View style={styles.composer}><TextInput value={draft} onChangeText={setDraft} onSubmitEditing={() => void submit()} placeholder="Répondre à cette annonce" placeholderTextColor="#859188" style={styles.composerInput} /><TouchableOpacity onPress={() => void submit()} style={styles.send}><MaterialIcons name="arrow-upward" size={16} color="#102015" /></TouchableOpacity></View></View> : null}</Card>;
+}
+
+function EmptyState({ query }: { query: string }) { return <View style={styles.empty}><MaterialIcons name="search-off" size={36} color="#D5A72C" /><Text style={styles.emptyTitle}>Aucune annonce trouvée</Text><Text style={styles.emptyText}>{query ? "Essayez un autre mot-clé ou publiez votre propre opportunité." : "Les nouvelles annonces apparaîtront ici."}</Text></View>; }
+
 const styles = StyleSheet.create({
-  screen: { backgroundColor: "#F7F5EF" },
-  content: { gap: 14, paddingBottom: 28, paddingHorizontal: 14 },
-  topBar: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", paddingBottom: 10, paddingTop: 6 },
-  brand: { color: "#16202A", fontSize: 25, fontWeight: "900", letterSpacing: -0.7 },
-  brandAccent: { color: "#E8752B" },
-  location: { color: "#667085", fontSize: 12, fontWeight: "600", marginTop: 2 },
-  topActions: { flexDirection: "row", gap: 2 },
-  storyList: { gap: 13, paddingBottom: 13, paddingTop: 4 },
-  story: { alignItems: "center", width: 58 },
-  storyRing: { alignItems: "center", borderRadius: 999, borderWidth: 2.5, height: 52, justifyContent: "center", position: "relative", width: 52 },
-  storyAdd: { alignItems: "center", backgroundColor: "#0B6E8A", borderColor: "#F7F5EF", borderRadius: 10, borderWidth: 2, bottom: -4, height: 20, justifyContent: "center", position: "absolute", right: -5, width: 20 },
-  storyName: { color: "#475467", fontSize: 11, fontWeight: "700", marginTop: 6, textAlign: "center" },
-  composer: { alignItems: "center", flexDirection: "row", gap: 10, padding: 12 },
-  composerField: { backgroundColor: "#F2F1EC", borderRadius: 20, flex: 1, paddingHorizontal: 15, paddingVertical: 12 },
-  composerText: { color: "#667085", fontSize: 14, fontWeight: "600" },
-  quickActions: { alignItems: "center", backgroundColor: "#FFFFFF", borderColor: "#E7E5DE", borderRadius: 16, borderWidth: 1, flexDirection: "row", justifyContent: "space-around", paddingVertical: 11 },
-  quickAction: { alignItems: "center", flexDirection: "row", gap: 6, minHeight: 32 },
-  quickText: { color: "#475467", fontSize: 13, fontWeight: "700" },
-  postCard: { overflow: "hidden", paddingTop: 14 },
-  postHeader: { alignItems: "center", flexDirection: "row", gap: 10, paddingHorizontal: 14 },
-  postIdentity: { flex: 1 },
-  postAuthor: { color: "#16202A", fontSize: 15, fontWeight: "800" },
-  postMeta: { color: "#667085", fontSize: 12, fontWeight: "600", marginTop: 1 },
-  postLocation: { color: "#8A8F98", fontSize: 11, marginTop: 1 },
-  tagWrap: { marginHorizontal: 14, marginTop: 12 },
-  postText: { color: "#29333D", fontSize: 15, lineHeight: 22, paddingHorizontal: 14, paddingVertical: 12 },
-  postImage: { height: 205, resizeMode: "cover", width: "100%" },
-  engagementInfo: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 10 },
-  reactionCluster: { alignItems: "center", flexDirection: "row", gap: 5 },
-  smallReaction: { alignItems: "center", backgroundColor: "#0B6E8A", borderRadius: 10, height: 20, justifyContent: "center", width: 20 },
-  engagementText: { color: "#667085", fontSize: 12, fontWeight: "600" },
-  postActions: { borderTopColor: "#EEECE6", borderTopWidth: 1, flexDirection: "row", justifyContent: "space-around", paddingVertical: 11 },
-  postAction: { alignItems: "center", flexDirection: "row", gap: 6, minHeight: 28 },
-  postActionText: { color: "#667085", fontSize: 12, fontWeight: "700" },
-  activeAction: { color: "#0B6E8A" },
-  commentsPanel: { borderTopColor: "#EEECE6", borderTopWidth: 1, gap: 9, padding: 13 },
-  commentsHeading: { color: "#475467", fontSize: 12, fontWeight: "900", textTransform: "uppercase" },
-  comment: { alignItems: "flex-start", flexDirection: "row", gap: 8 },
-  commentBubble: { backgroundColor: "#F2F1EC", borderRadius: 12, flex: 1, paddingHorizontal: 10, paddingVertical: 8 },
-  commentAuthor: { color: "#16202A", fontSize: 12, fontWeight: "900" },
-  commentBody: { color: "#475467", fontSize: 13, lineHeight: 18, marginTop: 2 },
-  noComments: { color: "#7A858F", fontSize: 12, fontStyle: "italic" },
-  commentComposer: { alignItems: "center", flexDirection: "row", gap: 7, marginTop: 3 },
-  commentInput: { backgroundColor: "#F2F1EC", borderRadius: 18, color: "#16202A", flex: 1, fontSize: 13, minHeight: 38, paddingHorizontal: 11 },
-  commentSend: { alignItems: "center", backgroundColor: "#0B6E8A", borderRadius: 17, height: 34, justifyContent: "center", width: 34 },
+  screen: { backgroundColor: "#F7F4EA" }, content: { paddingBottom: 30 }, topBar: { alignItems: "center", backgroundColor: "#07150B", flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 17, paddingTop: 13, paddingBottom: 12 }, wordmark: { color: "#D5A72C", fontSize: 19, fontWeight: "900", letterSpacing: -0.5 }, wordmarkLight: { color: "#F7F4EA" }, subtitle: { color: "#AAB6A9", fontSize: 10, fontWeight: "700", marginTop: 1 }, notification: { alignItems: "center", borderColor: "#35543A", borderRadius: 18, borderWidth: 1, height: 38, justifyContent: "center", width: 38 }, search: { alignItems: "center", backgroundColor: "#FFFFFF", borderColor: "#E0DCCB", borderRadius: 15, borderWidth: 1, flexDirection: "row", gap: 9, margin: 14, paddingHorizontal: 12 }, searchInput: { color: "#102015", flex: 1, fontSize: 13, minHeight: 46 }, hero: { height: 228, marginHorizontal: 14, overflow: "hidden", borderRadius: 21 }, heroImage: { opacity: 0.68 }, heroShade: { backgroundColor: "rgba(7,21,11,0.64)", flex: 1, justifyContent: "flex-end", padding: 17 }, heroEyebrow: { color: "#F5D875", fontSize: 10, fontWeight: "900", letterSpacing: 1.1 }, heroTitle: { color: "#FFFFFF", fontSize: 28, fontWeight: "900", letterSpacing: -0.7, lineHeight: 32, marginTop: 7 }, heroAccent: { color: "#D5A72C" }, heroText: { color: "#E4EADD", fontSize: 12, lineHeight: 17, marginTop: 8, maxWidth: "82%" }, heroCta: { alignItems: "center", alignSelf: "flex-start", backgroundColor: "#D5A72C", borderRadius: 11, flexDirection: "row", gap: 6, marginTop: 14, paddingHorizontal: 11, paddingVertical: 9 }, heroCtaText: { color: "#102015", fontSize: 11, fontWeight: "900" }, trustRow: { backgroundColor: "#102417", flexDirection: "row", justifyContent: "space-around", marginTop: 14, paddingVertical: 11 }, trust: { alignItems: "center", flexDirection: "row", gap: 5 }, trustText: { color: "#EAF0E5", fontSize: 11, fontWeight: "800" }, sectionHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginHorizontal: 16, marginTop: 21 }, sectionTitle: { color: "#102015", fontSize: 18, fontWeight: "900", letterSpacing: -0.3 }, sectionHint: { color: "#718074", fontSize: 11, marginTop: 2 }, seeAll: { color: "#176B35", fontSize: 12, fontWeight: "900" }, categories: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginHorizontal: 16, marginTop: 12 }, category: { alignItems: "center", gap: 6, width: "30.8%" }, categoryIcon: { alignItems: "center", borderRadius: 16, height: 51, justifyContent: "center", width: 51 }, categoryLabel: { color: "#334339", fontSize: 11, fontWeight: "800" }, publishMini: { alignItems: "center", backgroundColor: "#D5A72C", borderRadius: 11, flexDirection: "row", gap: 3, paddingHorizontal: 9, paddingVertical: 7 }, publishMiniText: { color: "#102015", fontSize: 11, fontWeight: "900" }, listing: { marginHorizontal: 14, marginTop: 12, overflow: "hidden", padding: 0 }, listingHeader: { alignItems: "center", flexDirection: "row", gap: 9, padding: 13 }, author: { flex: 1 }, authorName: { color: "#102015", fontSize: 13, fontWeight: "900" }, authorMeta: { color: "#6C7A70", fontSize: 11, marginTop: 2 }, listingImage: { height: 186, resizeMode: "cover", width: "100%" }, textArtwork: { alignItems: "center", backgroundColor: "#173D24", height: 130, justifyContent: "center" }, listingBody: { gap: 5, padding: 13 }, listingText: { color: "#28372C", fontSize: 14, lineHeight: 20 }, listingMeta: { color: "#778278", fontSize: 11 }, actions: { borderTopColor: "#ECE8DB", borderTopWidth: 1, flexDirection: "row", justifyContent: "space-around", paddingVertical: 10 }, action: { alignItems: "center", flexDirection: "row", gap: 5 }, actionText: { color: "#647067", fontSize: 11, fontWeight: "800" }, comments: { borderTopColor: "#ECE8DB", borderTopWidth: 1, gap: 7, padding: 12 }, comment: { color: "#445146", fontSize: 12, lineHeight: 17 }, commentAuthor: { color: "#102015", fontWeight: "900" }, composer: { alignItems: "center", flexDirection: "row", gap: 7, marginTop: 2 }, composerInput: { backgroundColor: "#F2F0E7", borderRadius: 17, color: "#102015", flex: 1, fontSize: 12, minHeight: 37, paddingHorizontal: 11 }, send: { alignItems: "center", backgroundColor: "#D5A72C", borderRadius: 17, height: 34, justifyContent: "center", width: 34 }, empty: { alignItems: "center", gap: 7, margin: 22, padding: 24 }, emptyTitle: { color: "#102015", fontSize: 16, fontWeight: "900" }, emptyText: { color: "#647067", fontSize: 12, lineHeight: 18, textAlign: "center" },
 });

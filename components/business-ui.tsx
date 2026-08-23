@@ -7,7 +7,7 @@ const AVATAR_DIMENSIONS = {
   lg: 76,
 } as const;
 
-export function Avatar({ initials, uri, size = "md", color = "#0B6E8A" }: { initials: string; uri?: string; size?: keyof typeof AVATAR_DIMENSIONS; color?: string }) {
+export function Avatar({ initials, uri, size = "md", color = "#176B35" }: { initials: string; uri?: string; size?: keyof typeof AVATAR_DIMENSIONS; color?: string }) {
   const dimension = AVATAR_DIMENSIONS[size];
   const sizeStyle = { height: dimension, width: dimension };
   const source: ImageSourcePropType | undefined = uri ? { uri } : undefined;
@@ -22,7 +22,7 @@ export function Avatar({ initials, uri, size = "md", color = "#0B6E8A" }: { init
 export function ActionIcon({ icon, label, onPress, badge }: { icon: React.ComponentProps<typeof MaterialIcons>["name"]; label: string; onPress: () => void; badge?: number }) {
   return (
     <TouchableOpacity accessibilityLabel={label} activeOpacity={0.72} onPress={onPress} style={styles.actionIcon}>
-      <MaterialIcons name={icon} size={24} color="#16202A" />
+      <MaterialIcons name={icon} size={24} color="#102015" />
       {badge ? <View style={styles.badge}><Text style={styles.badgeText}>{badge}</Text></View> : null}
     </TouchableOpacity>
   );
@@ -52,18 +52,18 @@ const styles = StyleSheet.create({
   avatarImage: { borderRadius: 999, resizeMode: "cover" },
   avatarText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   actionIcon: { alignItems: "center", height: 44, justifyContent: "center", position: "relative", width: 44 },
-  badge: { alignItems: "center", backgroundColor: "#E8752B", borderColor: "#F7F5EF", borderRadius: 10, borderWidth: 2, height: 20, justifyContent: "center", position: "absolute", right: 0, top: 1, minWidth: 20 },
+  badge: { alignItems: "center", backgroundColor: "#D5A72C", borderColor: "#F7F4EA", borderRadius: 10, borderWidth: 2, height: 20, justifyContent: "center", position: "absolute", right: 0, top: 1, minWidth: 20 },
   badgeText: { color: "#FFFFFF", fontSize: 10, fontWeight: "800" },
   tag: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  tagBlue: { backgroundColor: "#E2F2F6" },
-  tagOrange: { backgroundColor: "#FBE8DA" },
+  tagBlue: { backgroundColor: "#E3F0E5" },
+  tagOrange: { backgroundColor: "#F8EDCC" },
   tagGreen: { backgroundColor: "#DCF3E8" },
   tagText: { fontSize: 12, fontWeight: "700" },
-  tagBlueText: { color: "#0B6E8A" },
-  tagOrangeText: { color: "#B55318" },
-  tagGreenText: { color: "#16734C" },
+  tagBlueText: { color: "#176B35" },
+  tagOrangeText: { color: "#86610B" },
+  tagGreenText: { color: "#176B35" },
   sectionTitle: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 12, marginTop: 6 },
-  sectionHeading: { color: "#16202A", fontSize: 18, fontWeight: "800", letterSpacing: -0.2 },
-  sectionAction: { color: "#0B6E8A", fontSize: 14, fontWeight: "700" },
-  card: { backgroundColor: "#FFFFFF", borderColor: "#E7E5DE", borderRadius: 18, borderWidth: 1, shadowColor: "#16202A", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 1 },
+  sectionHeading: { color: "#102015", fontSize: 18, fontWeight: "800", letterSpacing: -0.2 },
+  sectionAction: { color: "#176B35", fontSize: 14, fontWeight: "700" },
+  card: { backgroundColor: "#FFFFFF", borderColor: "#DEDCCF", borderRadius: 18, borderWidth: 1, shadowColor: "#102015", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 1 },
 });

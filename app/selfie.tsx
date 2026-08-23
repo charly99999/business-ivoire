@@ -1,13 +1,13 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useBusiness } from "@/lib/business-context";
 
-type Step = "intro" | "camera" | "review";
+type Step = "intro" | "camera" | "review" | "web-preview";
 
 export default function SelfieScreen() {
   const { setSelfie } = useBusiness();
@@ -19,16 +19,23 @@ export default function SelfieScreen() {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [cameraError, setCameraError] = useState<string>();
+  const [cameraAuthorized, setCameraAuthorized] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+
+  useEffect(() => {
+    if (permission?.granted) setCameraAuthorized(true);
+  }, [permission?.granted]);
 
   const startCamera = async () => {
     try {
       const result = await requestPermission();
       if (result.granted) {
+        setCameraAuthorized(true);
         setCameraError(undefined);
         setReady(false);
         setStep("camera");
       } else {
+        setCameraAuthorized(false);
         Alert.alert("Caméra requise", "Le selfie de vérification doit être pris en direct avec la caméra frontale. Autorisez la caméra dans les réglages de votre iPhone puis réessayez.");
       }
     } catch {
@@ -65,9 +72,11 @@ export default function SelfieScreen() {
     }
   };
 
-  if (step === "intro") return <ScreenContainer edges={["top", "bottom", "left", "right"]} style={styles.introScreen}><TouchableOpacity accessibilityLabel="Fermer" onPress={() => router.back()} style={styles.closeButton}><MaterialIcons name="close" size={24} color="#102015" /></TouchableOpacity><View style={styles.introContent}><View style={styles.shield}><MaterialIcons name="verified-user" size={43} color="#D5A72C" /></View><Text style={styles.introTitle}>Vérifiez votre identité</Text><Text style={styles.introText}>Avant de publier, prenez un selfie en direct avec la caméra frontale. Il sera associé à votre profil vendeur afin de renforcer la confiance et de faciliter le traitement des signalements.</Text><View style={styles.ruleCard}><MaterialIcons name="camera-front" size={23} color="#176B35" /><View style={styles.ruleCopy}><Text style={styles.ruleTitle}>Caméra frontale obligatoire</Text><Text style={styles.ruleText}>Le selfie est pris maintenant, en direct. La galerie n’est jamais accessible depuis cet écran.</Text></View></View><View style={styles.ruleCard}><MaterialIcons name="lock-outline" size={23} color="#176B35" /><View style={styles.ruleCopy}><Text style={styles.ruleTitle}>Utilisation limitée</Text><Text style={styles.ruleText}>Le selfie sert à identifier le vendeur en cas de contrôle ou de signalement.</Text></View></View></View><View style={styles.introFooter}><TouchableOpacity disabled={busy} onPress={startCamera} style={[styles.cameraButton, busy && styles.disabled]}><MaterialIcons name="camera-front" size={21} color="#FFFFFF" /><Text style={styles.cameraButtonText}>Ouvrir la caméra frontale</Text></TouchableOpacity><Text style={styles.legalText}>En continuant, vous confirmez que cette photo est de vous.</Text></View></ScreenContainer>;
+  if (step === "intro") return <ScreenContainer edges={["top", "bottom", "left", "right"]} style={styles.introScreen}><TouchableOpacity accessibilityLabel="Fermer" onPress={() => router.back()} style={styles.closeButton}><MaterialIcons name="close" size={24} color="#102015" /></TouchableOpacity><View style={styles.introContent}><View style={styles.shield}><MaterialIcons name="verified-user" size={43} color="#D5A72C" /></View><Text style={styles.introTitle}>Vérifiez votre identité</Text><Text style={styles.introText}>Avant de publier, prenez un selfie en direct avec la caméra frontale. Il sera associé à votre profil vendeur afin de renforcer la confiance et de faciliter le traitement des signalements.</Text><View style={styles.ruleCard}><MaterialIcons name="camera-front" size={23} color="#176B35" /><View style={styles.ruleCopy}><Text style={styles.ruleTitle}>Caméra frontale obligatoire</Text><Text style={styles.ruleText}>Le selfie est pris maintenant, en direct. La galerie n’est jamais accessible depuis cet écran.</Text></View></View><View style={styles.ruleCard}><MaterialIcons name="lock-outline" size={23} color="#176B35" /><View style={styles.ruleCopy}><Text style={styles.ruleTitle}>Utilisation limitée</Text><Text style={styles.ruleText}>Le selfie sert à identifier le vendeur en cas de contrôle ou de signalement.</Text></View></View></View><View style={styles.introFooter}><TouchableOpacity disabled={busy} onPress={Platform.OS === "web" ? () => setStep("web-preview") : startCamera} style={[styles.cameraButton, busy && styles.disabled]}><MaterialIcons name="camera-front" size={21} color="#FFFFFF" /><Text style={styles.cameraButtonText}>Ouvrir la caméra frontale</Text></TouchableOpacity><Text style={styles.legalText}>En continuant, vous confirmez que cette photo est de vous.</Text></View></ScreenContainer>;
 
-  if (!permission?.granted) return <ScreenContainer edges={["top", "bottom", "left", "right"]} style={styles.deniedScreen}><MaterialIcons name="no-photography" size={46} color="#D5A72C" /><Text style={styles.deniedTitle}>Caméra requise</Text><Text style={styles.deniedText}>Le selfie ne peut pas venir de la galerie. Autorisez la caméra dans les réglages de votre iPhone, puis prenez votre visage en direct.</Text><TouchableOpacity style={styles.retryButton} onPress={startCamera}><Text style={styles.retryText}>Autoriser la caméra</Text></TouchableOpacity></ScreenContainer>;
+  if (step === "web-preview") return <ScreenContainer edges={["top", "bottom", "left", "right"]} style={styles.deniedScreen}><MaterialIcons name="phone-iphone" size={48} color="#D5A72C" /><Text style={styles.deniedTitle}>Selfie à faire sur iPhone</Text><Text style={styles.deniedText}>L’aperçu intégré à cette conversation ne peut pas ouvrir la caméra matérielle. Le selfie reste obligatoirement direct, sans galerie : ouvrez Business Ivoire dans Expo Go ou dans sa version iPhone pour utiliser la caméra frontale.</Text><TouchableOpacity style={styles.retryButton} onPress={() => setStep("intro")}><Text style={styles.retryText}>Revenir</Text></TouchableOpacity></ScreenContainer>;
+
+  if (!cameraAuthorized) return <ScreenContainer edges={["top", "bottom", "left", "right"]} style={styles.deniedScreen}><MaterialIcons name="no-photography" size={46} color="#D5A72C" /><Text style={styles.deniedTitle}>Caméra requise</Text><Text style={styles.deniedText}>Le selfie ne peut pas venir de la galerie. Autorisez la caméra dans les réglages de votre iPhone, puis prenez votre visage en direct.</Text><TouchableOpacity style={styles.retryButton} onPress={startCamera}><Text style={styles.retryText}>Autoriser la caméra</Text></TouchableOpacity></ScreenContainer>;
 
   if (step === "review" && previewUri) return <ScreenContainer edges={["top", "bottom", "left", "right"]} style={styles.reviewScreen}><View style={styles.reviewHeader}><TouchableOpacity onPress={() => setStep("camera")}><MaterialIcons name="arrow-back" size={25} color="#102015" /></TouchableOpacity><Text style={styles.reviewTitle}>Vérifiez votre selfie</Text><View style={styles.headerSpace} /></View><View style={styles.reviewContent}><Image source={{ uri: previewUri }} style={styles.preview} accessibilityLabel="Aperçu du selfie direct" /><Text style={styles.reviewText}>Assurez-vous que votre visage est net et bien éclairé. Cette photo prise en direct sera reliée à votre profil vendeur.</Text></View><View style={styles.reviewFooter}><TouchableOpacity disabled={busy} onPress={() => setStep("camera")} style={styles.retakeButton}><MaterialIcons name="refresh" size={20} color="#176B35" /><Text style={styles.retakeText}>Reprendre</Text></TouchableOpacity><TouchableOpacity disabled={busy} onPress={confirmSelfie} style={[styles.confirmButton, busy && styles.disabled]}><MaterialIcons name="check" size={20} color="#FFFFFF" /><Text style={styles.confirmText}>{busy ? "Enregistrement…" : "Confirmer"}</Text></TouchableOpacity></View></ScreenContainer>;
 

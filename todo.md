@@ -65,3 +65,9 @@
 - [x] Verrouiller le selfie sur une capture directe caméra frontale, sans aucun parcours galerie.
 - [x] Préserver la galerie uniquement pour le choix de photo de couverture.
 - [x] Valider et documenter la séparation stricte entre selfie direct et couverture galerie.
+- [x] Identifier le symptôme réel du selfie sur l’appareil utilisé et corriger le parcours natif concerné.
+- [x] Ajouter un diagnostic utilisateur exploitable lorsque la caméra frontale ne peut pas démarrer.
+- [ ] Revalider le selfie direct sur appareil iPhone réel avant de considérer la fonction disponible.
+- [x] Corriger l’ouverture de la caméra frontale lorsque le bouton selfie est actionné.
+- [x] Expliquer explicitement dans l’aperçu web que le selfie direct nécessite l’application iPhone, sans jamais proposer la galerie.
+- [x] Préparer une version de test iPhone avec selfie direct et indiquer le parcours de publication Google Play sans déployer.

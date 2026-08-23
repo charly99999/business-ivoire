@@ -2,11 +2,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import { Platform } from "react-native";
 
-export const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-export const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const configuredSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const configuredSupabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("La configuration Supabase Business Ivoire est incomplète.");
+// Static Expo Router rendering can run without Vercel runtime variables. Keep
+// module evaluation safe, while all real requests still fail clearly when the
+// deployment has not been configured with the public Supabase variables.
+export const supabaseConfigured = Boolean(configuredSupabaseUrl && configuredSupabaseAnonKey);
+export const supabaseUrl = configuredSupabaseUrl ?? "https://supabase-not-configured.invalid";
+export const supabaseAnonKey = configuredSupabaseAnonKey ?? "eyJ_not_configured";
+
+if (!supabaseConfigured && typeof window !== "undefined") {
+  console.warn("La configuration Supabase Business Ivoire est absente de ce déploiement.");
 }
 
 const webStorage = {

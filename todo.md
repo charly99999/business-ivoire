@@ -27,3 +27,14 @@
 - [x] Documenter les mesures nécessaires pour une exploitation à très grande échelle.
 - [x] Empêcher l’affichage brut d’une erreur OAuth dans le navigateur intégré mobile et rediriger proprement vers l’application.
 - [x] Remplacer le blocage OAuth externe par une inscription et connexion autonomes dans l’application.
+- [x] Auditer et remplacer les parcours marketplace incomplets par des annonces utilisables.
+- [x] Ajouter la prise en charge de plusieurs photos par annonce, du choix au stockage persistant.
+- [x] Ajouter les données d’annonce essentielles : titre, prix, catégorie, localisation, état et photos.
+- [x] Construire la création, la consultation, la recherche et les favoris d’annonces.
+- [ ] Ajouter des états de chargement, erreur, reprise et pagination adaptés à une audience importante.
+- [x] Recentrer l’application sur les annonces, recherche, favoris et messagerie acheteur-vendeur avant les fonctions sociales.
+- [x] Couvrir toutes les catégories d’annonces via une taxonomie et des filtres extensibles.
+- [x] Rendre le prix en FCFA obligatoire dans le formulaire, les API et l’affichage de chaque annonce.
+- [x] Formater chaque prix d’annonce en FCFA entier avec séparateur de milliers.
+- [x] Ajouter la messagerie comme contact principal et l’appel/WhatsApp uniquement après consentement explicite du vendeur.
+- [x] Finaliser et valider le parcours marketplace de bout en bout avant toute nouvelle livraison.

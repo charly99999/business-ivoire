@@ -10,6 +10,9 @@ import {
   follows,
   groupMembers,
   localAccounts,
+  listingFavorites,
+  listingImages,
+  listings,
   messages,
   notifications,
   postReactions,
@@ -83,6 +86,45 @@ export async function getUserById(id: number) {
   const db = requireDb(await getDb());
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return result[0];
+}
+
+export async function createListing(sellerId: number, input: { title: string; description: string; price: number; category: string; location: string; condition: "new" | "used" | "service"; images: Array<{ key: string; url: string }> }) {
+  const db = requireDb(await getDb());
+  const inserted = await db.insert(listings).values({ sellerId, title: input.title, description: input.description, price: input.price, category: input.category, location: input.location, condition: input.condition });
+  const listingId = Number(inserted[0].insertId);
+  if (input.images.length) await db.insert(listingImages).values(input.images.map((image, sortOrder) => ({ listingId, storageKey: image.key, url: image.url, sortOrder })));
+  return { listingId };
+}
+
+export async function listListings(viewerId: number) {
+  const db = requireDb(await getDb());
+  const rows = await db.select().from(listings).where(eq(listings.status, "active")).limit(30);
+  return Promise.all(rows.map(async (listing) => {
+    const images = await db.select().from(listingImages).where(eq(listingImages.listingId, listing.id)).orderBy(listingImages.sortOrder);
+    const seller = (await db.select({ ...publicProfileFields }).from(profiles).where(eq(profiles.userId, listing.sellerId)).limit(1))[0] ?? null;
+    const favorite = (await db.select().from(listingFavorites).where(and(eq(listingFavorites.listingId, listing.id), eq(listingFavorites.userId, viewerId))).limit(1))[0];
+    return { ...listing, images, seller, isFavorite: Boolean(favorite) };
+  }));
+}
+
+export async function getListing(id: number) {
+  const db = requireDb(await getDb());
+  const listing = (await db.select().from(listings).where(eq(listings.id, id)).limit(1))[0];
+  if (!listing) return null;
+  const images = await db.select().from(listingImages).where(eq(listingImages.listingId, id)).orderBy(listingImages.sortOrder);
+  const seller = (await db.select({ ...publicProfileFields }).from(profiles).where(eq(profiles.userId, listing.sellerId)).limit(1))[0] ?? null;
+  return { ...listing, images, seller };
+}
+
+export async function toggleListingFavorite(userId: number, listingId: number) {
+  const db = requireDb(await getDb());
+  const existing = await db.select().from(listingFavorites).where(and(eq(listingFavorites.userId, userId), eq(listingFavorites.listingId, listingId))).limit(1);
+  if (existing[0]) {
+    await db.delete(listingFavorites).where(eq(listingFavorites.id, existing[0].id));
+    return { favorited: false };
+  }
+  await db.insert(listingFavorites).values({ userId, listingId });
+  return { favorited: true };
 }
 
 export async function getLocalAccountByEmail(email: string) {

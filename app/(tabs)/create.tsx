@@ -8,23 +8,24 @@ import { Avatar, Card, Tag } from "@/components/business-ui";
 import { ScreenContainer } from "@/components/screen-container";
 import { useBusiness, type FeedPost } from "@/lib/business-context";
 import { imageUriToDataUri } from "@/lib/media";
+import { trpc } from "@/lib/trpc";
 
-const OPTIONS: { label: FeedPost["tag"]; icon: React.ComponentProps<typeof MaterialIcons>["name"] }[] = [
-  { label: "Immobilier", icon: "apartment" },
-  { label: "Entrepreneuriat", icon: "trending-up" },
-  { label: "Opportunité", icon: "lightbulb-outline" },
+const OPTIONS: { label: string; icon: React.ComponentProps<typeof MaterialIcons>["name"] }[] = [
+  { label: "Véhicules", icon: "directions-car" }, { label: "Immobilier", icon: "apartment" }, { label: "Électronique", icon: "devices" }, { label: "Emploi & services", icon: "work" }, { label: "Agriculture", icon: "agriculture" }, { label: "Maison & loisirs", icon: "weekend" }, { label: "Mode & beauté", icon: "checkroom" }, { label: "Autres", icon: "category" },
 ];
 
 export default function CreateScreen() {
   const { profile, publishPost } = useBusiness();
   const [text, setText] = useState("");
-  const [category, setCategory] = useState<FeedPost["tag"]>("Opportunité");
-  const [photoUri, setPhotoUri] = useState<string>();
+  const [category, setCategory] = useState("Immobilier");
+  const [price, setPrice] = useState("");
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const createListing = trpc.marketplace.create.useMutation();
 
   const pickPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.55 });
-    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+    const result = await ImagePicker.launchImageLibraryAsync({ allowsMultipleSelection: true, selectionLimit: 8, quality: 0.55 });
+    if (!result.canceled) setPhotoUris(result.assets.map((asset) => asset.uri).slice(0, 8));
   };
 
   const submit = async () => {
@@ -32,12 +33,19 @@ export default function CreateScreen() {
       Alert.alert("Ajoutez un message", "Décrivez l’opportunité ou l’information que vous souhaitez partager.");
       return;
     }
+    const numericPrice = Number(price.replace(/\s/g, ""));
+    if (!Number.isInteger(numericPrice) || numericPrice < 1) {
+      Alert.alert("Prix obligatoire", "Saisissez un prix entier supérieur à zéro en FCFA.");
+      return;
+    }
     try {
       setSubmitting(true);
-      const mediaImage = photoUri ? await imageUriToDataUri(photoUri) : undefined;
-      await publishPost(text, category, mediaImage);
+      const images = await Promise.all(photoUris.map((uri) => imageUriToDataUri(uri)));
+      if (images.length) await createListing.mutateAsync({ title: text.trim().slice(0, 80), description: text.trim(), price: numericPrice, category, location: profile.location || "Abidjan, Côte d’Ivoire", condition: "used", images });
+      else await publishPost(text, category as FeedPost["tag"]);
       setText("");
-      setPhotoUri(undefined);
+      setPrice("");
+      setPhotoUris([]);
       Alert.alert("Publication créée", "Votre contenu est maintenant visible dans la communauté.", [{ text: "Voir le fil", onPress: () => router.replace("/") }]);
     } catch {
       Alert.alert("Publication non enregistrée", "Vérifiez votre connexion puis réessayez.");
@@ -52,7 +60,8 @@ export default function CreateScreen() {
       <Card style={styles.composerCard}>
         <View style={styles.identity}><Avatar initials="BI" uri={profile.selfieUri} /><View><Text style={styles.name}>{profile.name}</Text><Tag label="Public" tint="blue" /></View></View>
         <TextInput multiline placeholder="Quelle opportunité souhaitez-vous partager ?" placeholderTextColor="#7A858F" style={styles.input} textAlignVertical="top" value={text} onChangeText={setText} />
-        {photoUri ? <View style={styles.previewWrap}><Image source={{ uri: photoUri }} style={styles.preview} /><TouchableOpacity activeOpacity={0.7} onPress={() => setPhotoUri(undefined)} style={styles.removePhoto}><MaterialIcons name="close" size={18} color="#FFFFFF" /></TouchableOpacity></View> : null}
+        <View style={styles.priceField}><TextInput value={price} onChangeText={setPrice} keyboardType="number-pad" placeholder="Prix obligatoire" placeholderTextColor="#7A858F" style={styles.priceInput} /><Text style={styles.currency}>FCFA</Text></View>
+        {photoUris.length ? <View style={styles.previewWrap}>{photoUris.map((photoUri, index) => <View key={photoUri} style={styles.previewItem}><Image source={{ uri: photoUri }} style={styles.preview} /><TouchableOpacity activeOpacity={0.7} onPress={() => setPhotoUris((items) => items.filter((_, itemIndex) => itemIndex !== index))} style={styles.removePhoto}><MaterialIcons name="close" size={18} color="#FFFFFF" /></TouchableOpacity></View>)}</View> : null}
         <View style={styles.divider} />
         <Text style={styles.fieldLabel}>Catégorie</Text>
         <View style={styles.optionGrid}>{OPTIONS.map((option) => <TouchableOpacity key={option.label} onPress={() => setCategory(option.label)} activeOpacity={0.7} style={[styles.option, category === option.label && styles.optionSelected]}><MaterialIcons name={option.icon} size={20} color={category === option.label ? "#FFFFFF" : "#0B6E8A"} /><Text style={[styles.optionText, category === option.label && styles.optionTextSelected]}>{option.label}</Text></TouchableOpacity>)}</View>
@@ -73,8 +82,9 @@ const styles = StyleSheet.create({
   identity: { alignItems: "center", flexDirection: "row", gap: 10 },
   name: { color: "#16202A", fontSize: 15, fontWeight: "800", marginBottom: 3 },
   input: { color: "#16202A", fontSize: 17, lineHeight: 24, minHeight: 180, paddingTop: 22 },
-  previewWrap: { marginBottom: 14, position: "relative" },
-  preview: { borderRadius: 14, height: 170, resizeMode: "cover", width: "100%" },
+  priceField: { alignItems: "center", backgroundColor: "#F7F4EA", borderColor: "#D5A72C", borderRadius: 12, borderWidth: 1, flexDirection: "row", marginBottom: 14, paddingHorizontal: 12 }, priceInput: { color: "#102015", flex: 1, fontSize: 15, fontWeight: "800", minHeight: 46 }, currency: { color: "#176B35", fontSize: 13, fontWeight: "900" },
+  previewWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }, previewItem: { position: "relative", width: "48%" },
+  preview: { borderRadius: 14, height: 120, resizeMode: "cover", width: "100%" },
   removePhoto: { alignItems: "center", backgroundColor: "rgba(22,32,42,0.78)", borderRadius: 16, height: 32, justifyContent: "center", position: "absolute", right: 9, top: 9, width: 32 },
   divider: { backgroundColor: "#EEECE6", height: 1, marginBottom: 15 },
   fieldLabel: { color: "#667085", fontSize: 12, fontWeight: "800", letterSpacing: 0.3, textTransform: "uppercase" },

@@ -36,6 +36,29 @@ export const localAccounts = mysqlTable(
   (table) => [uniqueIndex("local_accounts_user_unique").on(table.userId), uniqueIndex("local_accounts_email_unique").on(table.email)],
 );
 
+export const listings = mysqlTable("listings", {
+  id: int("id").autoincrement().primaryKey(),
+  sellerId: int("sellerId").notNull(),
+  title: varchar("title", { length: 160 }).notNull(),
+  description: text("description").notNull(),
+  price: int("price").notNull(),
+  currency: varchar("currency", { length: 8 }).default("XOF").notNull(),
+  category: varchar("category", { length: 80 }).notNull(),
+  location: varchar("location", { length: 160 }).notNull(),
+  condition: mysqlEnum("condition", ["new", "used", "service"]).default("used").notNull(),
+  status: mysqlEnum("status", ["active", "sold", "archived"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("listings_active_created_idx").on(table.status, table.createdAt), index("listings_category_idx").on(table.category), index("listings_seller_idx").on(table.sellerId)]);
+
+export const listingImages = mysqlTable("listing_images", {
+  id: int("id").autoincrement().primaryKey(), listingId: int("listingId").notNull(), storageKey: varchar("storageKey", { length: 512 }).notNull(), url: varchar("url", { length: 1024 }).notNull(), sortOrder: int("sortOrder").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [uniqueIndex("listing_image_order_unique").on(table.listingId, table.sortOrder), index("listing_images_listing_idx").on(table.listingId)]);
+
+export const listingFavorites = mysqlTable("listing_favorites", {
+  id: int("id").autoincrement().primaryKey(), listingId: int("listingId").notNull(), userId: int("userId").notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [uniqueIndex("listing_favorite_unique").on(table.listingId, table.userId), index("listing_favorite_user_idx").on(table.userId)]);
+
 export const profiles = mysqlTable(
   "profiles",
   {

@@ -7,12 +7,9 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useBusiness } from "@/lib/business-context";
 
 const shortcuts = [
-  { label: "Tableau de bord professionnel", subtitle: "Suivez votre activité", icon: "insights", route: "/dashboard" },
-  { label: "Enregistrements", subtitle: "Vos contenus gardés de côté", icon: "bookmark-border", route: "/discover" },
-  { label: "Souvenirs", subtitle: "Retrouvez vos publications", icon: "history", route: "/profile" },
-  { label: "Groupes", subtitle: "Vos communautés professionnelles", icon: "groups", route: "/discover" },
-  { label: "Aide et assistance", subtitle: "Centre d’aide Business Ivoire", icon: "help-outline", route: "/settings" },
-  { label: "Paramètres et confidentialité", subtitle: "Audience, Page et sécurité", icon: "settings", route: "/settings" },
+  { label: "Mon profil", subtitle: "Votre identité et vos coordonnées publiques", icon: "person-outline", route: "/profile" },
+  { label: "Mes annonces", subtitle: "Consultez la marketplace et vos publications", icon: "storefront", route: "/discover" },
+  { label: "Paramètres et confidentialité", subtitle: "Sécurité et préférences", icon: "settings", route: "/settings" },
 ];
 
 export default function MenuScreen() {

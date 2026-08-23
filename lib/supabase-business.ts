@@ -230,6 +230,29 @@ export async function sendSupabaseMessage(conversationId: string, body: string) 
   if (error) throw error;
 }
 
+export async function fetchSupabaseConversations() {
+  const userId = await currentUserId();
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("id,title,kind,updated_at,conversation_members!conversation_members_conversation_id_fkey(user_id,profiles!conversation_members_user_id_fkey(display_name,avatar_path)),messages(id,body,created_at,sender_id)")
+    .eq("conversation_members.user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []).map((conversation: { id: string; title?: string | null; kind: string; updated_at: string; conversation_members?: Array<{ user_id: string; profiles?: { display_name?: string | null; avatar_path?: string | null } | Array<{ display_name?: string | null; avatar_path?: string | null }> | null }>; messages?: Array<{ body: string; created_at: string }> }) => {
+    const member = (conversation.conversation_members ?? []).find((item) => item.user_id !== userId);
+    const profile = Array.isArray(member?.profiles) ? member?.profiles[0] : member?.profiles;
+    const latest = [...(conversation.messages ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+    return {
+      id: conversation.id,
+      name: conversation.title || profile?.display_name || "Conversation Business Ivoire",
+      preview: latest?.body || "Aucun message pour le moment.",
+      time: latest?.created_at || conversation.updated_at,
+      avatarUrl: profile?.avatar_path ? supabase.storage.from("profile-avatars").getPublicUrl(profile.avatar_path).data.publicUrl : undefined,
+    };
+  });
+}
+
 export async function fetchSupabaseMessages(conversationId: string) {
   const { data, error } = await supabase.from("messages").select("id,sender_id,body,created_at").eq("conversation_id", conversationId).order("created_at", { ascending: true });
   if (error) throw error;

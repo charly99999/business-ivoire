@@ -80,3 +80,7 @@
 - [x] Aligner les dépendances Expo et de navigation sur les versions compatibles recommandées, puis revalider l’application.
 - [x] Supprimer l’avertissement de module ESLint sans perturber les configurations CommonJS du projet.
 - [x] Réactiver et valider le test de déconnexion désormais couvert par l’authentification locale.
+- [x] Diagnostiquer et rétablir le chargement de l’aperçu sur le téléphone.
+- [x] Empêcher l’arrêt normal de Metro après le bundle web, responsable de l’échec d’aperçu sur téléphone.
+- [x] Remplacer l’aperçu Metro éphémère par un serveur statique persistant issu de l’export web Expo.
+- [x] Vérifier et documenter précisément la base de données et l’hébergement réellement utilisés, sans prétendre à Supabase ou à un hébergement gratuit non configuré.

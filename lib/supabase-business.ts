@@ -5,6 +5,18 @@ import { supabase, supabaseAnonKey, supabaseUrl } from "@/lib/supabase";
 
 type IdentityStatus = "pending" | "selfie_captured" | "approved" | "rejected";
 
+async function describeSelfieError(error: unknown) {
+  if (error instanceof Error && error.message && !/non-2xx|failed to fetch/i.test(error.message)) return error.message;
+  const context = error && typeof error === "object" && "context" in error ? (error as { context?: unknown }).context : undefined;
+  if (context && typeof (context as { clone?: unknown }).clone === "function") {
+    const response = context as Response;
+    const body = await response.clone().json().catch(() => null) as { error?: unknown; message?: unknown } | null;
+    const serverMessage = body && (typeof body.error === "string" ? body.error : typeof body.message === "string" ? body.message : undefined);
+    if (serverMessage) return serverMessage;
+  }
+  return "Le serveur n’a pas pu confirmer votre selfie. Vérifiez votre session et votre connexion, puis réessayez.";
+}
+
 export type SupabaseBusinessProfile = {
   id: string;
   displayName: string;
@@ -161,16 +173,20 @@ export async function setMyCover(dataUri: string) {
 }
 
 export async function captureMySelfie(dataUri: string) {
-  const userId = await currentUserId();
-  const extension = extensionForDataUri(dataUri);
-  const path = `${userId}/selfie-${Date.now()}.${extension}`;
-  await uploadCapturedSelfie(path, dataUri, extension);
-  console.info("[identity] capture-selfie function invoked", { path });
-  const { data, error } = await supabase.functions.invoke("capture-selfie", { body: { selfiePath: path } });
-  if (error) throw error;
-  if (data?.identityStatus !== "selfie_captured") throw new Error("Vérification selfie non confirmée.");
-  console.info("[identity] capture-selfie function completed", { path });
-  return data.identityStatus as IdentityStatus;
+  try {
+    const userId = await currentUserId();
+    const extension = extensionForDataUri(dataUri);
+    const path = `${userId}/selfie-${Date.now()}.${extension}`;
+    await uploadCapturedSelfie(path, dataUri, extension);
+    console.info("[identity] capture-selfie function invoked", { path });
+    const { data, error } = await supabase.functions.invoke("capture-selfie", { body: { selfiePath: path } });
+    if (error) throw error;
+    if (data?.identityStatus !== "selfie_captured") throw new Error("Vérification selfie non confirmée.");
+    console.info("[identity] capture-selfie function completed", { path });
+    return data.identityStatus as IdentityStatus;
+  } catch (error) {
+    throw new Error(await describeSelfieError(error));
+  }
 }
 
 export async function createSupabaseListing(input: { title: string; description: string; price: number; category: string; location: string; condition: "new" | "used" | "service"; images: string[] }) {

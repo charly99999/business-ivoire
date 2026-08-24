@@ -122,3 +122,9 @@
 - [x] Intégrer dans Business Ivoire les schémas et fonctionnalités marketplace manquants identifiés dans Afrique Business V2.
 - [x] Finaliser l’interface mobile Business Ivoire à partir de la référence validée, sans préserver les écrans incomplets hérités.
 - [ ] Synchroniser ce jalon social et messagerie validé avec GitHub main puis vérifier le déploiement Vercel lié.
+- [x] Remplacer l’inscription e-mail visible par un formulaire professionnel : nom, prénom, téléphone et ville.
+- [ ] Configurer et valider l’authentification Supabase nécessaire au numéro de téléphone sans exposer de secret.
+- [x] Rediriger obligatoirement toute nouvelle inscription téléphone vers le selfie frontal avant l’accès aux actions protégées.
+- [x] Préremplir le profil public avec les données d’inscription et utiliser le selfie comme avatar public dérivé.
+- [x] Optimiser les chargements, listes et interactions des parcours principaux pour une audience importante.
+- [ ] Exécuter un parcours réel téléphone → OTP → selfie dès que l’authentification SMS Supabase est activée.

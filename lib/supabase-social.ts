@@ -43,6 +43,21 @@ type PostRow = {
   post_shares?: Array<{ user_id: string }>;
 };
 
+type PublicFeedRow = {
+  id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  author_name?: string | null;
+  author_category?: string | null;
+  author_location?: string | null;
+  author_avatar_path?: string | null;
+  media_path?: string | null;
+  reaction_count?: number | string | null;
+  comment_count?: number | string | null;
+  has_reacted?: boolean | null;
+};
+
 function avatarUrl(path?: string | null) {
   return path ? supabase.storage.from("profile-avatars").getPublicUrl(path).data.publicUrl : undefined;
 }
@@ -67,32 +82,29 @@ async function requireVerifiedUser() {
   return userId;
 }
 
-export async function fetchPublicSocialPosts(viewerId?: string, limit = 20): Promise<SocialPost[]> {
-  const { data, error } = await supabase
-    .from("posts")
-    .select("id,author_id,body,created_at,profiles!posts_author_id_fkey(display_name,category,location,avatar_path),post_media(storage_path,sort_order),post_reactions(user_id),post_comments(id),post_shares(user_id)")
-    .eq("status", "published")
-    .eq("visibility", "public")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+export async function fetchPublicSocialPostPage(limit = 20, cursor?: string): Promise<{ items: SocialPost[]; nextCursor?: string }> {
+  const { data, error } = await supabase.rpc("get_public_social_feed", { p_cursor: cursor ?? null, p_limit: limit });
   if (error) throw error;
-  return ((data ?? []) as PostRow[]).map((post) => {
-    const firstMedia = [...(post.post_media ?? [])].sort((a, b) => a.sort_order - b.sort_order)[0];
-    return {
-      id: post.id,
-      authorId: post.author_id,
-      author: post.profiles?.display_name || "Membre Business Ivoire",
-      role: post.profiles?.category || "Membre vérifié",
-      place: post.profiles?.location || "Côte d’Ivoire",
-      avatar: avatarUrl(post.profiles?.avatar_path),
-      publishedAt: post.created_at,
-      text: post.body,
-      image: mediaUrl(firstMedia?.storage_path),
-      reactions: post.post_reactions?.length ?? 0,
-      comments: post.post_comments?.length ?? 0,
-      reacted: Boolean(viewerId && post.post_reactions?.some((reaction) => reaction.user_id === viewerId)),
-    };
-  });
+  const rows = (data ?? []) as PublicFeedRow[];
+  const items = rows.map((post) => ({
+    id: post.id,
+    authorId: post.author_id,
+    author: post.author_name || "Membre Business Ivoire",
+    role: post.author_category || "Membre vérifié",
+    place: post.author_location || "Côte d’Ivoire",
+    avatar: avatarUrl(post.author_avatar_path),
+    publishedAt: post.created_at,
+    text: post.body,
+    image: mediaUrl(post.media_path),
+    reactions: Number(post.reaction_count ?? 0),
+    comments: Number(post.comment_count ?? 0),
+    reacted: Boolean(post.has_reacted),
+  }));
+  return { items, nextCursor: items.length === limit ? items.at(-1)?.publishedAt : undefined };
+}
+
+export async function fetchPublicSocialPosts(_viewerId?: string, limit = 20): Promise<SocialPost[]> {
+  return (await fetchPublicSocialPostPage(limit)).items;
 }
 
 export async function createSupabasePost(body: string, mediaImage?: string) {

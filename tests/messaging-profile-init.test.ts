@@ -9,7 +9,7 @@ describe("messagerie Business Ivoire", () => {
 
     expect(database).toContain("await Promise.all([ensureProfile(userId), ensureProfile(targetUserId)])");
     expect(database).toContain("export async function sendMessage(userId: number, conversationId: number, body: string) {\n  await ensureProfile(userId);");
-    expect(inbox).toContain('from("conversations")');
+    expect(inbox).toContain('rpc("get_my_conversation_inbox"');
     expect(screen).not.toContain("trpc.");
   });
 });

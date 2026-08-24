@@ -11,6 +11,7 @@ describe("fil social Supabase", () => {
     expect(source).toContain('from("post_comments")');
     expect(source).toContain('from("post_shares")');
     expect(source).toContain('from("identity_verifications")');
+    expect(source).toContain('rpc("get_public_social_feed"');
     expect(source).toContain('from("post-media").upload');
     expect(migration).toContain("create table if not exists public.posts");
     expect(migration).toContain("create table if not exists public.post_comments");
@@ -18,5 +19,7 @@ describe("fil social Supabase", () => {
     expect(migration).toContain("post_media");
     expect(migration).toContain("post_comments_verified_insert");
     expect(migration).toContain("posts_verified_author_insert");
+    const scalingMigration = await import("node:fs/promises").then((fs) => fs.readFile("supabase/migrations/20260824_000006_social_feed_scaling.sql", "utf8"));
+    expect(scalingMigration).toContain("get_public_social_feed");
   });
 });

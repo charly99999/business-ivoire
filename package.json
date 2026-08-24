@@ -9,7 +9,7 @@
     "dev:metro": "pnpm exec expo export --platform web --output-dir .preview-web && pnpm exec serve .preview-web --listen ${EXPO_PORT:-8081} --single",
     "dev:native": "cross-env EXPO_USE_METRO_WORKSPACE_ROOT=1 pnpm exec expo start --tunnel --port ${NATIVE_EXPO_PORT:-8082}",
     "build": "esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "vercel-build": "expo export --platform web --output-dir dist",
+    "vercel-build": "mkdir -p node_modules/react-native-css-interop/.cache && touch node_modules/react-native-css-interop/.cache/web.css && expo export --platform web --output-dir dist"
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "lint": "expo lint",

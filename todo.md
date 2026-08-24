@@ -130,3 +130,6 @@
 - [ ] Exécuter un parcours réel téléphone → OTP → selfie dès que l’authentification SMS Supabase est activée.
 - [x] Diagnostiquer les défauts signalés sur l’aperçu, l’accès, le selfie, les publications et la messagerie.
 - [x] Corriger les erreurs confirmées et valider les parcours utilisateur réellement disponibles.
+- [x] Reproduire sur la version servie le blocage signalé après le dernier correctif et identifier sa cause exacte.
+- [x] Réparer le blocage réellement observé, puis valider le parcours concerné sans le déclarer disponible prématurément.
+- [ ] Confirmer que le déploiement Vercel Git devient READY après synchronisation de la correction de build.

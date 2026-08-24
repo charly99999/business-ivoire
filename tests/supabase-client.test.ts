@@ -6,6 +6,8 @@ describe("client Supabase Business Ivoire", () => {
 
     expect(source).toContain("EXPO_PUBLIC_SUPABASE_URL");
     expect(source).toContain("EXPO_PUBLIC_SUPABASE_ANON_KEY");
+    expect(source).toContain("publicSupabaseUrl");
+    expect(source).toContain("publicSupabaseAnonKey");
     expect(source).not.toContain("service_role");
     expect(source).not.toContain("sb_secret_");
   });

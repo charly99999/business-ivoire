@@ -4,12 +4,13 @@ import { router } from "expo-router";
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Avatar, Card, Tag } from "@/components/business-ui";
+import { AccessRequiredState } from "@/components/access-required-state";
 import { ScreenContainer } from "@/components/screen-container";
 import { useBusiness } from "@/lib/business-context";
 import { imageUriToDataUri } from "@/lib/media";
 
 export default function ProfileScreen() {
-  const { profile, posts, setCover } = useBusiness();
+  const { authenticated, profile, posts, setCover } = useBusiness();
   const localPosts = posts.filter((post) => post.author === profile.name).slice(0, 2);
 
   const pickCover = async () => {
@@ -23,6 +24,8 @@ export default function ProfileScreen() {
       }
     }
   };
+
+  if (!authenticated) return <ScreenContainer style={styles.screen}><AccessRequiredState title="Créez votre Page Business" description="Votre profil, votre selfie et vos annonces seront visibles après votre inscription par téléphone." /></ScreenContainer>;
 
   return (
     <ScreenContainer style={styles.screen}>

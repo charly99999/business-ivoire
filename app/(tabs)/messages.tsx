@@ -3,11 +3,14 @@ import { router } from "expo-router";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Avatar, Card } from "@/components/business-ui";
+import { AccessRequiredState } from "@/components/access-required-state";
 import { ScreenContainer } from "@/components/screen-container";
 import { useBusiness } from "@/lib/business-context";
 
 export default function MessagesScreen() {
-  const { conversations, refreshAll } = useBusiness();
+  const { authenticated, conversations, refreshAll } = useBusiness();
+
+  if (!authenticated) return <ScreenContainer style={styles.screen}><AccessRequiredState title="Vos messages sont sécurisés" description="Connectez-vous avec votre numéro pour contacter un vendeur et retrouver vos conversations." actionLabel="Se connecter" /></ScreenContainer>;
 
   return (
     <ScreenContainer style={styles.screen}>

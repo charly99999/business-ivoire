@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { AccessRequiredState } from "@/components/access-required-state";
 import { useBusiness } from "@/lib/business-context";
 import { imageUriToDataUri } from "@/lib/media";
 
@@ -26,6 +27,9 @@ export default function CreatePostScreen() {
     catch (error) { Alert.alert("Publication impossible", error instanceof Error ? error.message : "Réessayez dans un instant."); }
     finally { setSending(false); }
   };
+
+  if (!authenticated) return <ScreenContainer style={s.screen}><AccessRequiredState title="Partagez après votre inscription" description="Connectez-vous avec votre numéro pour publier une actualité visible par la communauté." /></ScreenContainer>;
+  if (!identityVerified) return <ScreenContainer style={s.screen}><AccessRequiredState title="Selfie requis avant publication" description="Votre selfie frontal direct doit être enregistré avant de publier une actualité communautaire." actionLabel="Prendre mon selfie" destination="/selfie" /></ScreenContainer>;
 
   return <ScreenContainer style={s.screen}><View style={s.top}><TouchableOpacity onPress={() => router.back()} style={s.back}><MaterialIcons name="arrow-back" size={22} color="#F7F4EA" /></TouchableOpacity><Text style={s.title}>Nouvelle actualité</Text><View style={s.spacer} /></View><View style={s.content}><Text style={s.label}>Partagez une information utile</Text><Text style={s.copy}>Vos publications sont visibles par la communauté Business Ivoire. Le selfie direct est obligatoire pour protéger les échanges.</Text><TextInput accessibilityLabel="Contenu de l’actualité" value={body} onChangeText={setBody} placeholder="Écrivez votre actualité, opportunité ou conseil…" placeholderTextColor="#77847B" multiline maxLength={3000} style={s.input} textAlignVertical="top" /><Text style={s.counter}>{body.trim().length}/3000</Text>{imageUri ? <View style={s.previewWrap}><Image source={{ uri: imageUri }} style={s.preview} /><TouchableOpacity onPress={() => setImageUri(undefined)} style={s.removeImage}><MaterialIcons name="close" size={17} color="#FFF" /></TouchableOpacity></View> : <TouchableOpacity onPress={() => void pickImage()} style={s.mediaButton}><MaterialIcons name="add-photo-alternate" size={20} color="#176B35" /><Text style={s.mediaText}>Ajouter une image</Text><Text style={s.optional}>Facultatif</Text></TouchableOpacity>}<TouchableOpacity disabled={sending || !body.trim()} onPress={() => void submit()} style={[s.button, (sending || !body.trim()) && s.disabled]}><MaterialIcons name="send" size={18} color="#102015" /><Text style={s.buttonText}>{sending ? "Publication…" : "Publier l’actualité"}</Text></TouchableOpacity></View></ScreenContainer>;
 }

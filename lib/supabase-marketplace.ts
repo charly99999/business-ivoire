@@ -34,7 +34,7 @@ export type MarketplaceListing = {
   condition: "new" | "used" | "service";
   status: "active" | "sold" | "archived";
   createdAt: string;
-  seller: { displayName: string; location: string; avatarUrl?: string };
+  seller: { displayName: string; location: string; avatarUrl?: string; selfieAvatarReady: boolean };
   images: Array<{ id: string; url: string; sortOrder: number }>;
 };
 
@@ -63,6 +63,7 @@ function mapListing(row: ListingRow): MarketplaceListing {
       displayName: row.profiles?.display_name ?? "Vendeur Business Ivoire",
       location: row.profiles?.location ?? row.location,
       avatarUrl: publicAvatarUrl(row.profiles?.avatar_path),
+      selfieAvatarReady: Boolean(row.profiles?.avatar_path),
     },
     images: (row.listing_images ?? [])
       .slice()

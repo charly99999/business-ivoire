@@ -128,3 +128,5 @@
 - [x] Préremplir le profil public avec les données d’inscription et utiliser le selfie comme avatar public dérivé.
 - [x] Optimiser les chargements, listes et interactions des parcours principaux pour une audience importante.
 - [ ] Exécuter un parcours réel téléphone → OTP → selfie dès que l’authentification SMS Supabase est activée.
+- [x] Diagnostiquer les défauts signalés sur l’aperçu, l’accès, le selfie, les publications et la messagerie.
+- [x] Corriger les erreurs confirmées et valider les parcours utilisateur réellement disponibles.
